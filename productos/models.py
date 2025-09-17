@@ -18,7 +18,6 @@ class Categoria(models.Model):
     def __str__(self):
         return self.nombre
 
-
 class Marca(models.Model):
     nombre = models.CharField(max_length=120, unique=True)
     slug = models.SlugField(max_length=140, unique=True, blank=True)
@@ -35,7 +34,6 @@ class Marca(models.Model):
     def __str__(self):
         return self.nombre
 
-
 class Producto(models.Model):
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, related_name='productos')
     marca = models.ForeignKey(Marca, on_delete=models.SET_NULL, null=True, blank=True, related_name='productos')
@@ -44,7 +42,7 @@ class Producto(models.Model):
     descripcion = models.TextField(blank=True)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)
-    imagen = models.ImageField(upload_to='productos/')   # 1 sola imagen por requisito
+    imagen = models.ImageField(upload_to='productos/')   # una sola imagen por requisito
     activo = models.BooleanField(default=True)
     destacado = models.BooleanField(default=False)
     creado = models.DateTimeField(auto_now_add=True)

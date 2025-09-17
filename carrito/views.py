@@ -1,13 +1,10 @@
-from django.shortcuts import render
-
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from productos.models import Producto
 from .cart import Cart
 
 def ver_carrito(request):
-    cart = Cart(request)
-    return render(request, "carrito/ver.html", {"cart": cart})
+    return render(request, "carrito/ver.html", {"cart": Cart(request)})
 
 @require_POST
 def add(request, pid):
@@ -31,11 +28,9 @@ def update(request, pid):
     return redirect("carrito_ver")
 
 def remove(request, pid):
-    cart = Cart(request)
-    cart.remove(pid)
+    Cart(request).remove(pid)
     return redirect("carrito_ver")
 
 def clear(request):
     Cart(request).clear()
     return redirect("carrito_ver")
-
