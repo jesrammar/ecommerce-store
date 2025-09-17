@@ -7,10 +7,11 @@ class Cart:
         self.session = request.session
         cart = self.session.get(CART_SESSION_ID)
         if cart is None:
-            cart = self.session[CART_SESSION_ID] = {}
+            cart = {}
+            self.session[CART_SESSION_ID] = cart
         self.cart = cart
 
-    def add(self, product_id: int, price: str, qty: int = 1, update=False):
+    def add(self, product_id: int, price: str, qty: int = 1, update: bool = False):
         pid = str(product_id)
         if pid not in self.cart:
             self.cart[pid] = {"qty": 0, "price": str(price)}
@@ -29,16 +30,18 @@ class Cart:
 
     def __iter__(self):
         from productos.models import Producto
-        product_ids = self.cart.keys()
+        product_ids = list(self.cart.keys())
         productos = {str(p.id): p for p in Producto.objects.filter(id__in=product_ids)}
         for pid, item in self.cart.items():
             p = productos.get(pid)
             if not p:
                 continue
-            item["product"] = p
-            item["price"] = Decimal(item["price"])
-            item["subtotal"] = item["price"] * item["qty"]
-            yield item
+            yield {
+                "product": p,
+                "qty": item["qty"],
+                "price": Decimal(item["price"]),
+                "subtotal": Decimal(item["price"]) * item["qty"],
+            }
 
     def count(self) -> int:
         return sum(item["qty"] for item in self.cart.values())
