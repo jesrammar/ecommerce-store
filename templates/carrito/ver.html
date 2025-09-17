@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Carrito{% endblock %}
+{% block content %}
+<h1>Carrito</h1>
+{% if cart.count %}
+<table class="table">
+  <tr><th>Producto</th><th>Cantidad</th><th>Subtotal</th><th></th></tr>
+  {% for item in cart %}
+  <tr>
+    <td>{{ item.product.nombre }}</td>
+    <td>
+      <form action="{% url 'carrito:carrito_update' item.product.id %}" method="post" class="d-inline">
+        {% csrf_token %}
+        <input type="number" name="qty" value="{{ item.qty }}" min="0" max="{{ item.product.stock }}">
+        <button class="btn btn-sm btn-primary">Actualizar</button>
+      </form>
+    </td>
+    <td>{{ item.subtotal }} €</td>
+    <td>
+      <a href="{% url 'carrito:carrito_remove' item.product.id %}" class="btn btn-sm btn-danger">X</a>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+<p>Total: <strong>{{ cart.total }} €</strong></p>
+<a href="{% url 'pedidos:checkout_datos' %}" class="btn btn-success">Finalizar compra</a>
+{% else %}
+<p>Tu carrito está vacío.</p>
+{% endif %}
+{% endblock %}

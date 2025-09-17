@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Pedido confirmado{% endblock %}
+{% block content %}
+<h1>¡Gracias por tu compra!</h1>
+<p>Pedido Nº {{ pedido.id }} — Total {{ pedido.total }} €</p>
+<p><a href="/">Volver a la tienda</a></p>
+<p>Seguimiento: <a href="{% url 'pedidos:seguimiento' pedido.tracking_token %}">clic aquí</a></p>
+{% endblock %}
