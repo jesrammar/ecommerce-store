@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Seguimiento{% endblock %}
+{% block content %}
+<h1>Seguimiento de pedido</h1>
+<p>Pedido #{{ pedido.id }} — Estado pago: {{ pedido.pago_estado }}</p>
+<ul>
+  {% for it in pedido.items.all %}
+  <li>{{ it.titulo }} × {{ it.cantidad }} — {{ it.subtotal }} €</li>
+  {% endfor %}
+</ul>
+{% endblock %}

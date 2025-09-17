@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Checkout - Pago{% endblock %}
+{% block content %}
+<h1>Pago (simulado)</h1>
+<form method="post">{% csrf_token %}
+  <button class="btn btn-success">Pagar ahora</button>
+</form>
+{% endblock %}
