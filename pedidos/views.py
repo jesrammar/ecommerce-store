@@ -2,10 +2,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
-from .forms import DatosEnvioForm
+from django.urls import reverse
+
+from .forms import DatosEnvioForm, MetodoPagoForm
 from .services import crear_pedido_desde_carrito
 from .models import Pedido
-from carrito.cart import Cart
+
 
 # Paso 1: datos cliente + envío
 def checkout_datos(request):
@@ -18,37 +20,56 @@ def checkout_datos(request):
         form = DatosEnvioForm(initial=request.session.get("checkout_datos", {}))
     return render(request, "pedidos/checkout_datos.html", {"form": form})
 
-# Paso 2: pago (simulado)
+
+# Paso 2: selección de método de pago
 def checkout_pago(request):
-    datos = request.session.get("checkout_datos")
-    if not datos:
+    datos_cliente = request.session.get("checkout_datos")
+    if not datos_cliente:
+        messages.error(request, "Completa primero tus datos de entrega.")
         return redirect("pedidos:checkout_datos")
 
     if request.method == "POST":
-        try:
-            pedido = crear_pedido_desde_carrito(request, datos)
-            pedido.pago_estado = "pagado"
-            pedido.pago_ref = "TEST-" + str(pedido.id)
-            pedido.save(update_fields=["pago_estado", "pago_ref"])
-            Cart(request).clear()
-            enviar_confirmacion_email(pedido)
-            request.session.pop("checkout_datos", None)
-            return redirect("pedidos:checkout_ok", pedido_id=pedido.id)
-        except Exception as e:
-            messages.error(request, str(e))
+        form = MetodoPagoForm(request.POST)
+        if form.is_valid():
+            request.session["checkout_pago"] = {
+                "pago_metodo": form.cleaned_data["pago_metodo"]
+            }
+            request.session.modified = True
 
-    return render(request, "pedidos/checkout_pago.html", {"datos": datos})
+            if form.cleaned_data["pago_metodo"] == "contrareembolso":
+                # Crear pedido directamente
+                datos = {**datos_cliente, **request.session.get("checkout_pago", {})}
+                pedido = crear_pedido_desde_carrito(request, datos)
+
+                # limpiar datos de sesión de checkout
+                request.session.pop("checkout_datos", None)
+                request.session.pop("checkout_pago", None)
+
+                return redirect("pedidos:checkout_ok", pedido_id=pedido.id)
+
+            else:
+                # Para tarjeta → pasaremos luego a Stripe
+                return redirect("pedidos:checkout_tarjeta")
+    else:
+        initial = (request.session.get("checkout_pago") or {}).copy()
+        form = MetodoPagoForm(initial=initial)
+
+    return render(request, "pedidos/checkout_pago.html", {"form": form})
+
 
 # Paso 3: confirmación
 def checkout_ok(request, pedido_id):
     pedido = get_object_or_404(Pedido, id=pedido_id)
     return render(request, "pedidos/checkout_ok.html", {"pedido": pedido})
 
-# Seguimiento por token
+
+# Seguimiento por token público
 def seguimiento(request, token):
     pedido = get_object_or_404(Pedido, tracking_token=token)
     return render(request, "pedidos/seguimiento.html", {"pedido": pedido})
 
+
+# Envío de confirmación de pedido (puedes llamarlo desde services.py)
 def enviar_confirmacion_email(pedido: Pedido):
     asunto = f"Confirmación de pedido #{pedido.id}"
     cuerpo = (
@@ -58,6 +79,21 @@ def enviar_confirmacion_email(pedido: Pedido):
         f"Seguimiento: {getattr(settings, 'SITE_URL', 'http://127.0.0.1:8000')}/seguimiento/{pedido.tracking_token}/\n"
     )
     try:
-        send_mail(asunto, cuerpo, getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@example.com"), [pedido.email])
+        send_mail(
+            asunto,
+            cuerpo,
+            getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@example.com"),
+            [pedido.email],
+        )
     except Exception:
         pass
+
+
+
+
+def checkout_ok(request):
+    from django.shortcuts import get_object_or_404
+    from .models import Pedido
+    pedido_id = request.GET.get("id")
+    pedido = get_object_or_404(Pedido, pk=pedido_id)
+    return render(request, "pedidos/checkout_ok.html", {"pedido": pedido})

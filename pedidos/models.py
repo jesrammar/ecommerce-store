@@ -1,7 +1,28 @@
 from django.db import models
 from django.utils.crypto import get_random_string
+from decimal import Decimal
+
+class ShippingMethod(models.Model):
+    nombre = models.CharField(max_length=80)
+    slug = models.SlugField(unique=True)
+    coste = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0.00"))
+    activo = models.BooleanField(default=True)
+    orden = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["orden", "id"]
+        verbose_name = "Método de entrega"
+        verbose_name_plural = "Métodos de entrega"
+
+    def __str__(self):
+        return f"{self.nombre} ({self.coste} €)"
+
 
 class Pedido(models.Model):
+    PAGO_METODOS = (
+        ("contrareembolso", "Contrareembolso"),
+        ("tarjeta", "Tarjeta"),
+    )
     email = models.EmailField()
     nombre = models.CharField(max_length=120)
     telefono = models.CharField(max_length=30, blank=True)
@@ -9,7 +30,18 @@ class Pedido(models.Model):
     ciudad = models.CharField(max_length=120)
     cp = models.CharField(max_length=12)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+     # Envío
+    envio_metodo = models.ForeignKey(
+        ShippingMethod, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="pedidos"
+    )
+    envio_coste = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0.00"))
+    # (opcional) estado logístico: creado, preparando, enviado, entregado
+    # entrega_estado = models.CharField(max_length=20, default="creado")
 
+
+    pago_metodo = models.CharField(max_length=20, choices=PAGO_METODOS, default="contrareembolso")
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     pago_estado = models.CharField(max_length=20, default="pendiente")
     pago_ref = models.CharField(max_length=120, blank=True)
