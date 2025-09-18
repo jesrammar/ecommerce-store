@@ -1,30 +1,94 @@
 {% extends "base.html" %}
 {% block title %}Carrito{% endblock %}
+
 {% block content %}
 <h1>Carrito</h1>
+
 {% if cart.count %}
-<table class="table">
-  <tr><th>Producto</th><th>Cantidad</th><th>Subtotal</th><th></th></tr>
-  {% for item in cart %}
-  <tr>
-    <td>{{ item.product.nombre }}</td>
-    <td>
-      <form action="{% url 'carrito:carrito_update' item.product.id %}" method="post" class="d-inline">
-        {% csrf_token %}
-        <input type="number" name="qty" value="{{ item.qty }}" min="0" max="{{ item.product.stock }}">
-        <button class="btn btn-sm btn-primary">Actualizar</button>
-      </form>
-    </td>
-    <td>{{ item.subtotal }} €</td>
-    <td>
-      <a href="{% url 'carrito:carrito_remove' item.product.id %}" class="btn btn-sm btn-danger">X</a>
-    </td>
-  </tr>
-  {% endfor %}
-</table>
-<p>Total: <strong>{{ cart.total }} €</strong></p>
-<a href="{% url 'pedidos:checkout_datos' %}" class="btn btn-success">Finalizar compra</a>
+  <table class="table align-middle">
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th style="width: 220px;">Cantidad</th>
+        <th class="text-end">Subtotal</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for item in cart %}
+      <tr>
+        <td>{{ item.product.nombre }}</td>
+        <td>
+          <form action="{% url 'carrito:carrito_update' item.product.id %}" method="post" class="d-flex gap-2">
+            {% csrf_token %}
+            <input class="form-control" style="max-width: 100px" type="number"
+                   name="qty" value="{{ item.qty }}" min="0" max="{{ item.product.stock }}">
+            <button class="btn btn-sm btn-primary">Actualizar</button>
+          </form>
+        </td>
+        <td class="text-end">{{ item.subtotal }} {{ MONEDA|default:"€" }}</td>
+        <td class="text-end">
+          <a href="{% url 'carrito:carrito_remove' item.product.id %}" class="btn btn-sm btn-danger">Quitar</a>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  {# --- RESUMEN --- #}
+  {% comment %} 
+    Si la vista ya envía 'subtotal', 'shipping_cost', 'shipping_method' y 'total',
+    los usaremos. Si no, hacemos fallback a cart.total (subtotal) y envío 0.
+  {% endcomment %}
+  {% with sbt=subtotal|default:cart.total sc=shipping_cost|default:"0.00" meth=shipping_method %}
+    <div class="card" style="max-width: 520px;">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Resumen</h5>
+
+        <div class="d-flex justify-content-between">
+          <span>Subtotal</span>
+          <span>{{ sbt }} {{ MONEDA|default:"€" }}</span>
+        </div>
+
+        {% if sbt >= ENVIO_GRATIS_DESDE %}
+          <div class="d-flex justify-content-between">
+            <span>Envío</span>
+            <span>0.00 {{ MONEDA|default:"€" }} <span class="badge bg-success">¡Envío gratis!</span></span>
+          </div>
+          {% with ttl=sbt %}
+            <div class="d-flex justify-content-between mt-2 fw-bold">
+              <span>Total</span>
+              <span>{{ total|default:ttl }} {{ MONEDA|default:"€" }}</span>
+            </div>
+          {% endwith %}
+        {% else %}
+          <div class="d-flex justify-content-between">
+            <span>Envío {% if meth %}({{ meth.nombre }}){% else %}(sin seleccionar){% endif %}</span>
+            <span>{{ sc }} {{ MONEDA|default:"€" }}</span>
+          </div>
+          <div class="mt-2">
+            <a href="{% url 'carrito:seleccionar_envio' %}" class="btn btn-sm btn-outline-primary">
+              Elegir método de entrega
+            </a>
+          </div>
+          {% with ttl=sbt|add:sc %}
+            <div class="d-flex justify-content-between mt-2 fw-bold">
+              <span>Total</span>
+              <span>{{ total|default:ttl }} {{ MONEDA|default:"€" }}</span>
+            </div>
+          {% endwith %}
+        {% endif %}
+
+        <div class="mt-4 d-flex gap-2">
+          <a href="{% url 'pedidos:checkout_datos' %}" class="btn btn-success">Finalizar compra</a>
+          <a href="{% url 'productos:catalogo' %}" class="btn btn-outline-secondary">Seguir comprando</a>
+        </div>
+      </div>
+    </div>
+  {% endwith %}
+
 {% else %}
-<p>Tu carrito está vacío.</p>
+  <p>Tu carrito está vacío.</p>
+  <a href="{% url 'productos:catalogo' %}" class="btn btn-primary">Ir al catálogo</a>
 {% endif %}
 {% endblock %}

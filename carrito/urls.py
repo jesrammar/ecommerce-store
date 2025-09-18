@@ -9,4 +9,6 @@ urlpatterns = [
     path("update/<int:pid>/", views.update, name="carrito_update"),
     path("remove/<int:pid>/", views.remove, name="carrito_remove"),
     path("clear/", views.clear, name="carrito_clear"),
+    path("seleccionar-envio/", views.seleccionar_envio, name="seleccionar_envio"),
+
 ]

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Elige la forma de entrega</h1>
+<form method="post">
+  {% csrf_token %}
+  {{ form }}
+  <button class="btn btn-primary mt-3">Guardar</button>
+  <a href="{% url 'carrito:carrito_ver' %}" class="btn btn-link">Volver al carrito</a>
+</form>
+{% endblock %}

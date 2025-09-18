@@ -1,8 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Checkout - Pago{% endblock %}
+{% block title %}Pago{% endblock %}
 {% block content %}
-<h1>Pago (simulado)</h1>
-<form method="post">{% csrf_token %}
-  <button class="btn btn-success">Pagar ahora</button>
+<h1>Selecciona el método de pago</h1>
+<form method="post" class="mt-3">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <div class="mb-3">
+    {{ form.pago_metodo }}
+  </div>
+  <button class="btn btn-primary">Continuar</button>
+  <a href="{% url 'pedidos:checkout_datos' %}" class="btn btn-link">Volver</a>
 </form>
 {% endblock %}
