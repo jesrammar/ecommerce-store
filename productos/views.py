@@ -18,7 +18,7 @@ def lista_por_categoria(request, slug):
 
 def detalle_producto(request, slug):
     p = get_object_or_404(Producto, slug=slug, activo=True)
-    return render(request, "productos/detalle.html", {"p": p})
+    return render(request, "productos/detalle.html", {"producto": p})
 
 def buscar(request):
     return lista_productos(request)
