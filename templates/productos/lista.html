@@ -6,11 +6,11 @@
   {% for p in productos %}
   <div class="col-md-3">
     <div class="card mb-3">
-      <img src="{{ p.imagen.url }}" class="card-img-top" alt="{{ p.nombre }}">
+      <img src="{{ p.im en.url }}" class="card-img-top" alt="{{ p.nombre }}">
       <div class="card-body">
         <h5 class="card-title">{{ p.nombre }}</h5>
         <p>{{ p.precio }} €</p>
-        <a href="{% url 'productos:detalle' p.slug %}" class="btn btn-primary">Ver</a>
+        <a href="{% url 'productos:producto_detalle' p.slug %}" class="btn btn-primary">Ver</a>
       </div>
     </div>
   </div>
