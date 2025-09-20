@@ -1,15 +1,13 @@
+from decimal import Decimal
+
+from django.conf import settings
+from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
-from productos.models import Producto
-from .cart import Cart
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from .forms import ShippingSelectForm
-from .utils import get_cart, set_cart, compute_totals
-from decimal import Decimal
-from django.conf import settings
-from pedidos.models import ShippingMethod
 
+from productos.models import Producto
+from pedidos.models import ShippingMethod
+from .cart import Cart
 
 
 @require_POST
@@ -19,7 +17,8 @@ def add(request, pid):
     qty = max(1, int(request.POST.get("qty", 1)))
     if p.stock >= qty:
         cart.add(product_id=p.id, price=str(p.precio), qty=qty)
-    return redirect(request.POST.get("next") or "carrito_ver")
+    return redirect(request.POST.get("next") or "carrito:carrito_ver")
+
 
 @require_POST
 def update(request, pid):
@@ -31,36 +30,48 @@ def update(request, pid):
     else:
         qty = min(qty, p.stock)
         cart.add(product_id=p.id, price=str(p.precio), qty=qty, update=True)
-    return redirect("carrito_ver")
+    return redirect("carrito:carrito_ver")
+
 
 def remove(request, pid):
     Cart(request).remove(pid)
-    return redirect("carrito_ver")
+    return redirect("carrito:carrito_ver")
+
 
 def clear(request):
     Cart(request).clear()
-    return redirect("carrito_ver")
+    return redirect("carrito:carrito_ver")
 
 
 def seleccionar_envio(request):
-    # guardamos solo el id en sesión para no tocar tu Cart
+    """
+    Vista simple para seleccionar el método de envío y guardarlo en sesión.
+    Si prefieres hacerlo dentro de la propia vista del carrito, puedes
+    postear directamente a esta URL desde el template del carrito.
+    """
     if request.method == "POST":
-        form = ShippingSelectForm(request.POST)
-        if form.is_valid():
-            request.session["shipping_method_id"] = form.cleaned_data["shipping_method"].id
+        sm_id = request.POST.get("shipping_method_id")
+        if sm_id and ShippingMethod.objects.filter(pk=sm_id, activo=True).exists():
+            request.session["shipping_method_id"] = int(sm_id)
             request.session.modified = True
             messages.success(request, "Método de entrega actualizado.")
-            return redirect("carrito:carrito_ver")
-    else:
-        initial = {"shipping_method": request.session.get("shipping_method_id")}
-        form = ShippingSelectForm(initial=initial)
-    return render(request, "carrito/seleccionar_envio.html", {"form": form})
+        else:
+            messages.error(request, "Método de entrega no válido.")
+        return redirect("carrito:carrito_ver")
 
+    # GET: pintar un selector muy básico
+    metodos = ShippingMethod.objects.filter(activo=True).order_by("orden", "id")
+    seleccionado = request.session.get("shipping_method_id")
+    return render(
+        request,
+        "carrito/seleccionar_envio.html",
+        {"metodos": metodos, "seleccionado": int(seleccionado) if seleccionado else None},
+    )
 
 
 def ver_carrito(request):
     cart = Cart(request)
-    subtotal = cart.total()
+    subtotal = Decimal(str(cart.total()))  # por si el cart devuelve str/float
     method = None
     shipping_cost = Decimal("0.00")
 
@@ -69,10 +80,8 @@ def ver_carrito(request):
         method = ShippingMethod.objects.filter(pk=method_id, activo=True).first()
 
     ENVIO_GRATIS_DESDE = getattr(settings, "ENVIO_GRATIS_DESDE", Decimal("999999"))
-    if subtotal >= ENVIO_GRATIS_DESDE:
-        shipping_cost = Decimal("0.00")
-    else:
-        shipping_cost = Decimal(getattr(method, "coste", 0) or 0)
+    if subtotal < ENVIO_GRATIS_DESDE and method:
+        shipping_cost = Decimal(method.coste)
 
     total = subtotal + shipping_cost
     ctx = {
@@ -83,4 +92,3 @@ def ver_carrito(request):
         "total": total,
     }
     return render(request, "carrito/ver.html", ctx)
-

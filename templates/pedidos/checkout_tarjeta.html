@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Pagar con tarjeta{% endblock %}
+{% block content %}
+<h1>Pagar con tarjeta</h1>
+<p>Pedido #{{ pedido.id }} — Total: <strong>{{ pedido.total }} {{ MONEDA }}</strong></p>
+<p>Serás redirigido a Stripe para completar el pago de forma segura.</p>
+
+<button id="pay" class="btn btn-primary">Pagar ahora</button>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+  const stripe = Stripe("{{ STRIPE_PUBLIC_KEY }}");
+  document.getElementById("pay").addEventListener("click", async () => {
+    const sessionId = "{{ session_id }}";
+    const { error } = await stripe.redirectToCheckout({ sessionId });
+    if (error) { alert(error.message || "No se pudo iniciar el pago."); }
+  });
+</script>
+{% endblock %}

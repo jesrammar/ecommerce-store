@@ -1,94 +1,69 @@
 {% extends "base.html" %}
 {% block title %}Carrito{% endblock %}
-
 {% block content %}
 <h1>Carrito</h1>
-
-{% if cart.count %}
-  <table class="table align-middle">
-    <thead>
-      <tr>
-        <th>Producto</th>
-        <th style="width: 220px;">Cantidad</th>
-        <th class="text-end">Subtotal</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
+{% if cart_count %}
+<table class="table align-middle">
+  <thead><tr><th>Producto</th><th>Cantidad</th><th class="text-end">Subtotal</th><th></th></tr></thead>
+  <tbody>
     {% for item in cart %}
-      <tr>
-        <td>{{ item.product.nombre }}</td>
-        <td>
-          <form action="{% url 'carrito:carrito_update' item.product.id %}" method="post" class="d-flex gap-2">
-            {% csrf_token %}
-            <input class="form-control" style="max-width: 100px" type="number"
-                   name="qty" value="{{ item.qty }}" min="0" max="{{ item.product.stock }}">
-            <button class="btn btn-sm btn-primary">Actualizar</button>
-          </form>
-        </td>
-        <td class="text-end">{{ item.subtotal }} {{ MONEDA|default:"€" }}</td>
-        <td class="text-end">
-          <a href="{% url 'carrito:carrito_remove' item.product.id %}" class="btn btn-sm btn-danger">Quitar</a>
-        </td>
-      </tr>
+    <tr>
+      <td>{{ item.product.nombre }}</td>
+      <td>
+        <form action="{% url 'carrito:carrito_update' item.product.id %}" method="post" class="d-flex gap-2">
+          {% csrf_token %}
+          <input type="number" class="form-control form-control-sm" style="width:90px" name="qty" value="{{ item.qty }}" min="0" max="{{ item.product.stock }}">
+          <button class="btn btn-sm btn-primary">Actualizar</button>
+        </form>
+      </td>
+      <td class="text-end">{{ item.subtotal }} {{ MONEDA }}</td>
+      <td class="text-end">
+        <a href="{% url 'carrito:carrito_remove' item.product.id %}" class="btn btn-sm btn-outline-danger">Quitar</a>
+      </td>
+    </tr>
     {% endfor %}
-    </tbody>
-  </table>
+  </tbody>
+</table>
 
-  {# --- RESUMEN --- #}
-  {% comment %} 
-    Si la vista ya envía 'subtotal', 'shipping_cost', 'shipping_method' y 'total',
-    los usaremos. Si no, hacemos fallback a cart.total (subtotal) y envío 0.
-  {% endcomment %}
-  {% with sbt=subtotal|default:cart.total sc=shipping_cost|default:"0.00" meth=shipping_method %}
-    <div class="card" style="max-width: 520px;">
-      <div class="card-body">
-        <h5 class="card-title mb-3">Resumen</h5>
+<div class="row g-3">
+  <div class="col-md-6">
+    <form method="post" action="{% url 'carrito:set_shipping_method' %}" class="card card-body">
+      {% csrf_token %}
+      <label class="form-label">Método de entrega</label>
+      <select class="form-select" name="shipping_method_id">
+        {% for sm in shipping_methods %}
+          <option value="{{ sm.id }}" {% if sm.id == shipping_selected_id %}selected{% endif %}>
+            {{ sm.nombre }} ({{ sm.coste }} {{ MONEDA }})
+          </option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-outline-secondary mt-2">Aplicar</button>
+    </form>
+  </div>
 
+  <div class="col-md-6">
+    <div class="card card-body">
+      <div class="d-flex justify-content-between"><span>Subtotal</span><strong>{{ cart.total }} {{ MONEDA }}</strong></div>
+      {% if cart.total >= ENVIO_GRATIS_DESDE %}
+        <div class="d-flex justify-content-between text-success">
+          <span>Envío</span><strong>0.00 {{ MONEDA }} (¡envío gratis!)</strong>
+        </div>
+        <div class="d-flex justify-content-between fs-5 mt-2">
+          <span>Total</span><strong>{{ cart.total }} {{ MONEDA }}</strong>
+        </div>
+      {% else %}
         <div class="d-flex justify-content-between">
-          <span>Subtotal</span>
-          <span>{{ sbt }} {{ MONEDA|default:"€" }}</span>
+          <span>Envío</span><strong>{{ shipping_cost }} {{ MONEDA }}</strong>
         </div>
-
-        {% if sbt >= ENVIO_GRATIS_DESDE %}
-          <div class="d-flex justify-content-between">
-            <span>Envío</span>
-            <span>0.00 {{ MONEDA|default:"€" }} <span class="badge bg-success">¡Envío gratis!</span></span>
-          </div>
-          {% with ttl=sbt %}
-            <div class="d-flex justify-content-between mt-2 fw-bold">
-              <span>Total</span>
-              <span>{{ total|default:ttl }} {{ MONEDA|default:"€" }}</span>
-            </div>
-          {% endwith %}
-        {% else %}
-          <div class="d-flex justify-content-between">
-            <span>Envío {% if meth %}({{ meth.nombre }}){% else %}(sin seleccionar){% endif %}</span>
-            <span>{{ sc }} {{ MONEDA|default:"€" }}</span>
-          </div>
-          <div class="mt-2">
-            <a href="{% url 'carrito:seleccionar_envio' %}" class="btn btn-sm btn-outline-primary">
-              Elegir método de entrega
-            </a>
-          </div>
-          {% with ttl=sbt|add:sc %}
-            <div class="d-flex justify-content-between mt-2 fw-bold">
-              <span>Total</span>
-              <span>{{ total|default:ttl }} {{ MONEDA|default:"€" }}</span>
-            </div>
-          {% endwith %}
-        {% endif %}
-
-        <div class="mt-4 d-flex gap-2">
-          <a href="{% url 'pedidos:checkout_datos' %}" class="btn btn-success">Finalizar compra</a>
-          <a href="{% url 'productos:catalogo' %}" class="btn btn-outline-secondary">Seguir comprando</a>
+        <div class="d-flex justify-content-between fs-5 mt-2">
+          <span>Total</span><strong>{{ cart.total|add:shipping_cost }} {{ MONEDA }}</strong>
         </div>
-      </div>
+      {% endif %}
+      <a href="{% url 'pedidos:checkout_datos' %}" class="btn btn-success mt-3">Finalizar compra</a>
     </div>
-  {% endwith %}
-
+  </div>
+</div>
 {% else %}
-  <p>Tu carrito está vacío.</p>
-  <a href="{% url 'productos:catalogo' %}" class="btn btn-primary">Ir al catálogo</a>
+<p>Tu carrito está vacío.</p>
 {% endif %}
 {% endblock %}
