@@ -1,19 +1,31 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Productos{% endblock %}
+
 {% block content %}
 <h1>Catálogo</h1>
-<div class="row">
+
+<div class="row g-3">
   {% for p in productos %}
-  <div class="col-md-3">
-    <div class="card mb-3">
-      <img src="{{ p.im en.url }}" class="card-img-top" alt="{{ p.nombre }}">
-      <div class="card-body">
-        <h5 class="card-title">{{ p.nombre }}</h5>
-        <p>{{ p.precio }} €</p>
-        <a href="{% url 'productos:producto_detalle' p.slug %}" class="btn btn-primary">Ver</a>
+    <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+      <div class="card h-100">
+        {% if p.imagen %}
+          <img src="{{ p.imagen.url }}" class="card-img-top" alt="{{ p.nombre }}">
+        {% else %}
+          <img src="{% static 'img/placeholder.png' %}" class="card-img-top" alt="{{ p.nombre }}">
+        {% endif %}
+        <div class="card-body">
+          <h5 class="card-title">{{ p.nombre }}</h5>
+          {% if p.stock == 0 %}
+            <span class="badge bg-secondary">Agotado</span>
+          {% endif %}
+          <p class="card-text mb-2">{{ p.precio }} {{ MONEDA }}</p>
+          <a href="{% url 'productos:producto_detalle' p.slug %}" class="btn btn-outline-primary btn-sm">Ver</a>
+        </div>
       </div>
     </div>
-  </div>
+  {% empty %}
+    <p>No hay productos.</p>
   {% endfor %}
 </div>
 {% endblock %}

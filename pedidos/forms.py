@@ -1,21 +1,26 @@
 from django import forms
 from .models import Pedido
 
+class SeguimientoIDForm(forms.Form):
+    pedido_id = forms.IntegerField(label="ID de pedido")
+    email = forms.EmailField(label="Email usado en la compra")
+
+
 class DatosEnvioForm(forms.Form):
-    email = forms.EmailField()
     nombre = forms.CharField(max_length=120)
+    email = forms.EmailField()
     telefono = forms.CharField(max_length=30, required=False)
     direccion = forms.CharField(max_length=200)
     ciudad = forms.CharField(max_length=120)
     cp = forms.CharField(max_length=12)
-    aceptar_politica = forms.BooleanField(label="Acepto la política de privacidad")
-
-
 
 class MetodoPagoForm(forms.Form):
+    PAGO_CHOICES = (
+        ("contrareembolso", "Contrareembolso"),
+        ("tarjeta", "Tarjeta"),
+    )
     pago_metodo = forms.ChoiceField(
-        choices=Pedido.PAGO_METODOS,
+        choices=PAGO_CHOICES,
         widget=forms.RadioSelect,
-        label="Método de pago",
         initial="contrareembolso",
     )

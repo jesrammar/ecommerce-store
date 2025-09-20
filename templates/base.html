@@ -6,9 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Tienda Virtual{% endblock %}</title>
 
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Tus estilos (opcional) -->
   {# <link rel="stylesheet" href="{% static 'css/app.css' %}"> #}
 
   {% block extra_head %}{% endblock %}
@@ -17,26 +15,29 @@
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
-    <a class="navbar-brand fw-semibold" href="{% url 'home' %}">Tienda</a>
+    {# Si no tienes la URL 'home', usa productos:catalogo o '/' #}
+    <a class="navbar-brand fw-semibold" href="{% url 'productos:catalogo' %}">Tienda</a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Menú">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div class="collapse navbar-collapse" id="mainNav">
-      <!-- Navegación izquierda -->
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item"><a class="nav-link" href="{% url 'productos:catalogo' %}">Catálogo</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'pedidos:seguimiento' token='demo' %}" onclick="event.preventDefault();document.getElementById('seguimientoModalBtn').click();">Seguimiento</a></li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'pedidos:seguimiento' token='demo' %}"
+             onclick="event.preventDefault();document.getElementById('seguimientoModalBtn').click();">
+            Seguimiento
+          </a>
+        </li>
       </ul>
 
-      <!-- Buscador -->
       <form class="d-flex me-3" role="search" action="{% url 'productos:buscar' %}" method="get">
         <input class="form-control me-2" type="search" name="q" placeholder="Buscar productos…" aria-label="Buscar" value="{{ request.GET.q }}">
         <button class="btn btn-outline-light" type="submit">Buscar</button>
       </form>
 
-      <!-- Navegación derecha -->
       <ul class="navbar-nav mb-2 mb-lg-0">
         {% if user.is_authenticated %}
           <li class="nav-item"><a class="nav-link" href="{% url 'accounts:perfil' %}">Hola, {{ user.first_name|default:user.username }}</a></li>
@@ -55,7 +56,6 @@
   </div>
 </nav>
 
-<!-- Mensajes flash -->
 {% if messages %}
   <div class="container mt-3">
     {% for message in messages %}
@@ -67,47 +67,45 @@
   </div>
 {% endif %}
 
-<!-- Contenido principal -->
 <main class="container my-4">
   {% block content %}{% endblock %}
 </main>
 
-<!-- Pie de página simple -->
 <footer class="border-top py-4 mt-auto">
   <div class="container d-flex flex-wrap justify-content-between align-items-center">
-    <p class="mb-0 text-muted">© {{ now|date:"Y" }} Tienda — Todos los derechos reservados</p>
+    <p class="mb-0 text-muted">© {% now "Y" %} Tienda — Todos los derechos reservados</p>
     <div class="text-muted small">
       Envío gratis desde {{ ENVIO_GRATIS_DESDE }} {{ MONEDA|default:"€" }}
     </div>
   </div>
 </footer>
 
-<!-- Modal ligero para seguimiento por ID/email (opcional) -->
 <button id="seguimientoModalBtn" type="button" class="d-none" data-bs-toggle="modal" data-bs-target="#seguimientoModal"></button>
 <div class="modal fade" id="seguimientoModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
-    <form class="modal-content" action="{% url 'pedidos:seguimiento' token='dummy' %}" method="get" onsubmit="return false;">
+    <form class="modal-content" onsubmit="return false;">
       <div class="modal-header">
         <h5 class="modal-title">Seguimiento de pedido</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
       <div class="modal-body">
-        <p class="text-muted small mb-2">Si tienes un enlace con token puedes usarlo directamente. Próximamente: consulta por ID + email.</p>
+        <p class="text-muted small mb-2">Si tienes un enlace con token puedes usarlo directamente.</p>
         <div class="input-group">
           <span class="input-group-text">Token</span>
           <input type="text" class="form-control" id="tokenSeguimiento" placeholder="Pega aquí tu token">
         </div>
       </div>
       <div class="modal-footer">
-        <a class="btn btn-primary" href="#" onclick="const t=document.getElementById('tokenSeguimiento').value.trim(); if(t){ window.location.href='{% url 'pedidos:seguimiento' token='__T__' %}'.replace('__T__', t);}">Consultar</a>
+        <a class="btn btn-primary" href="#"
+           onclick="const t=document.getElementById('tokenSeguimiento').value.trim(); if(t){ window.location.href='{% url 'pedidos:seguimiento' token='__T__' %}'.replace('__T__', encodeURIComponent(t)); }">
+          Consultar
+        </a>
       </div>
     </form>
   </div>
 </div>
 
-<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
 {% block extra_js %}{% endblock %}
 </body>
 </html>
