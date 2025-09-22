@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <h1 class="h4 mb-3">Seguimiento de pedido por ID</h1>
+
+  <form method="post" class="row gy-2 gx-2 align-items-end mb-4">
+    {% csrf_token %}
+    <div class="col-sm-3">
+      <label class="form-label">ID de pedido</label>
+      <input name="id" class="form-control" placeholder="p.ej. 123">
+    </div>
+    <div class="col-sm-4">
+      <label class="form-label">Email</label>
+      <input name="email" type="email" class="form-control" placeholder="tu@correo.com">
+    </div>
+    <div class="col-sm-2 d-grid">
+      <button class="btn btn-primary">Consultar</button>
+    </div>
+  </form>
+
+  {% if error %}<div class="alert alert-warning">{{ error }}</div>{% endif %}
+
+  {% if pedido %}
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Pedido #{{ pedido.id }} — {{ pedido.pago_estado|capfirst }}</h5>
+        <p class="mb-1"><strong>Total:</strong> € {{ pedido.total }}</p>
+        <p class="mb-1"><strong>Creado:</strong> {{ pedido.created_at }}</p>
+        <p class="mb-1"><strong>Envío a:</strong> {{ pedido.nombre }}, {{ pedido.direccion }}, {{ pedido.cp }} {{ pedido.ciudad }}</p>
+        <hr>
+        <h6>Artículos</h6>
+        <ul class="list-unstyled">
+          {% for it in pedido.items.all %}
+            <li>×{{ it.cantidad }} — {{ it.titulo }} — € {{ it.subtotal }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "admin/admin_base.html" %}
+{% block title %}Eliminar producto{% endblock %}
+{% block content %}
+<h1 class="h5">¿Eliminar "{{ object }}"?</h1>
+<form method="post">{% csrf_token %}
+  <button class="btn btn-danger">Sí, eliminar</button>
+  <a class="btn btn-link" href="{% url 'admin_producto_list' %}">Cancelar</a>
+</form>
+{% endblock %}

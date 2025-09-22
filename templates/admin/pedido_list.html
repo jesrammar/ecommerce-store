@@ -1,0 +1,30 @@
+{% extends "admin/admin_base.html" %}
+{% block title %}Pedidos{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4">Pedidos</h1>
+  <form class="d-flex" method="get">
+    <select class="form-select" name="estado" onchange="this.form.submit()">
+      <option value="">Todos los estados</option>
+      {% for k,v in pedido.ESTADOS %}
+      <option value="{{ k }}" {% if request.GET.estado == k %}selected{% endif %}>{{ v }}</option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+<table class="table table-sm">
+  <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado</th><th></th></tr></thead>
+  <tbody>
+  {% for p in pedidos %}
+    <tr>
+      <td>{{ p.id }}</td>
+      <td>{{ p.fecha_creacion }}</td>
+      <td>{{ p.email }}</td>
+      <td>€ {{ p.total }}</td>
+      <td>{{ p.get_estado_display|default:p.estado }}</td>
+      <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{% url 'admin_pedido_detail' p.pk %}">Ver</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
