@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+  <body style="font-family: Arial, sans-serif;">
+    <h2>Gracias por tu compra, {{ pedido.nombre }}.</h2>
+    <p>Hemos recibido tu pedido <strong>#{{ pedido.id }}</strong>.</p>
+    <h3>Resumen</h3>
+    <ul>
+      {% for it in pedido.items.all %}
+        <li>×{{ it.cantidad }} — {{ it.producto.nombre }} ({{ it.talla }}) — € {{ it.total }}</li>
+      {% endfor %}
+    </ul>
+    <p><strong>Total:</strong> € {{ pedido.total }}</p>
+    <p><strong>Entrega en:</strong> {{ pedido.direccion }}, {{ pedido.codigo_postal }} {{ pedido.ciudad }}</p>
+    <p>Puedes seguir tu pedido aquí: {{ site_url }}{% url 'seguimiento_token' token=pedido.token_tracking %}</p>
+  </body>
+</html>

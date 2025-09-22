@@ -1,15 +1,25 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block title %}{{ producto.nombre }}{% endblock %}
+
 {% block content %}
 <h1>{{ producto.nombre }}</h1>
-<img src="{{ producto.imagen.url }}" width="300" class="mb-3">
-<p>{{ producto.descripcion }}</p>
-<p><strong>{{ producto.precio }} €</strong></p>
 
-<form action="{% url 'carrito:carrito_add' producto.id %}" method="post">
+{% if producto.imagen %}
+  <img src="{{ producto.imagen.url }}" width="300" class="mb-3" alt="{{ producto.nombre }}">
+{% else %}
+  <img src="{% static 'img/placeholder.png' %}" width="300" class="mb-3" alt="{{ producto.nombre }}">
+{% endif %}
+
+<p>{{ producto.descripcion }}</p>
+<p><strong>{{ producto.precio }} {{ MONEDA|default:"€" }}</strong></p>
+
+<form action="{% url 'carrito:carrito_add' producto.id %}" method="post" class="mt-3">
   {% csrf_token %}
-  <input type="number" name="qty" value="1" min="1" max="{{ producto.stock }}">
-  <button type="submit" class="btn btn-success">Añadir al carrito</button>
-  <input type="hidden" name="next" value="{{ request.path }}">
+  <input type="number" name="qty" value="1" min="1" max="{{ producto.stock }}" class="form-control w-auto d-inline">
+  <button class="btn btn-primary ms-2" {% if producto.stock == 0 %}disabled{% endif %}>
+    Añadir al carrito
+  </button>
 </form>
 {% endblock %}

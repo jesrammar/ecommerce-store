@@ -3,6 +3,8 @@ import os
 from decimal import Decimal
 from dotenv import load_dotenv
 
+
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
@@ -15,12 +17,12 @@ SITE_URL = os.environ.get("SITE_URL", "http://127.0.0.1:8000")
 INSTALLED_APPS = [
     'django.contrib.admin','django.contrib.auth','django.contrib.contenttypes',
     'django.contrib.sessions','django.contrib.messages','django.contrib.staticfiles',
-    'productos','carrito','pedidos','accounts',
+    'productos','carrito','pedidos','accounts.apps.AccountsConfig',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # 'whitenoise.middleware.WhiteNoiseMiddleware',  # <- actívalo en despliegue PaaS
+    # 'whitenoise.middleware.WhiteNoiseMiddleware',  # <-  activar en despliegue PaaS
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -49,11 +51,17 @@ TEMPLATES = [{
 
 WSGI_APPLICATION = 'tienda_virtual.wsgi.application'
 
-DATABASES = {'default': {'ENGINE':'django.db.backends.sqlite3','NAME': BASE_DIR/'db.sqlite3'}}
+DATABASES = {
+    'default': {
+        'ENGINE':'django.db.backends.sqlite3',
+        'NAME': BASE_DIR/'db.sqlite3'
+    }
+}
 
+# Autenticación
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "accounts:perfil"
-LOGOUT_REDIRECT_URL = "home"
+LOGOUT_REDIRECT_URL = "productos:catalogo"
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME':'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -87,3 +95,11 @@ MONEDA = "€"
 STRIPE_PUBLIC_KEY = os.environ.get("STRIPE_PUBLIC_KEY", "")
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+
+# Opcional: confiar en estos orígenes para CSRF (útil en despliegues y Stripe)
+CSRF_TRUSTED_ORIGINS = [
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+    # "https://<tu-subdominio>.ngrok.io",
+    # "https://<tu-dominio-en-paas>",
+]

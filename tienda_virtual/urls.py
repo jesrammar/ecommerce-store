@@ -1,15 +1,28 @@
 from django.contrib import admin
 from django.urls import path, include
+from productos.admin_views import (
+    ProductoListView, ProductoCreateView, ProductoUpdateView, ProductoDeleteView
+)
 from django.conf import settings
 from django.conf.urls.static import static
+from pedidos import admin_views as pedidos_admin
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("", include("productos.urls")),   # home → catálogo
-    path("", include("pedidos.urls")),
+    # públicas
+    path("", include("productos.urls")),
     path("carrito/", include("carrito.urls")),
-    path("accounts/", include("accounts.urls")),
-]
+    path("pedidos/", include("pedidos.urls")),
+    path("cuenta/", include("accounts.urls")),
+    path("django-admin/", admin.site.urls),  # solo para desarrollo
 
+    # admin propio (producción)
+    path("gestion/productos/", ProductoListView.as_view(), name="admin_producto_list"),
+    path("gestion/productos/nuevo/", ProductoCreateView.as_view(), name="admin_producto_create"),
+    path("gestion/productos/<int:pk>/editar/", ProductoUpdateView.as_view(), name="admin_producto_update"),
+    path("gestion/productos/<int:pk>/eliminar/", ProductoDeleteView.as_view(), name="admin_producto_delete"),
+
+    path("gestion/pedidos/", pedidos_admin.pedidos_list, name="admin_pedido_list"),
+    path("gestion/pedidos/<int:pk>/", pedidos_admin.pedido_detalle, name="admin_pedido_detail"),
+]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -68,27 +68,32 @@ def seleccionar_envio(request):
         {"metodos": metodos, "seleccionado": int(seleccionado) if seleccionado else None},
     )
 
-
 def ver_carrito(request):
     cart = Cart(request)
-    subtotal = Decimal(str(cart.total()))  # por si el cart devuelve str/float
-    method = None
+    subtotal = Decimal(str(cart.total()))
+
+    # método de envío seleccionado en sesión
+    selected_id = request.session.get("shipping_method_id")
+    shipping_method = None
     shipping_cost = Decimal("0.00")
 
-    method_id = request.session.get("shipping_method_id")
-    if method_id:
-        method = ShippingMethod.objects.filter(pk=method_id, activo=True).first()
+    if selected_id:
+        shipping_method = ShippingMethod.objects.filter(pk=selected_id, activo=True).first()
 
     ENVIO_GRATIS_DESDE = getattr(settings, "ENVIO_GRATIS_DESDE", Decimal("999999"))
-    if subtotal < ENVIO_GRATIS_DESDE and method:
-        shipping_cost = Decimal(method.coste)
+    if subtotal < ENVIO_GRATIS_DESDE and shipping_method:
+        shipping_cost = Decimal(shipping_method.coste)
 
     total = subtotal + shipping_cost
+
     ctx = {
         "cart": cart,
         "subtotal": subtotal,
         "shipping_cost": shipping_cost,
-        "shipping_method": method,
+        "shipping_method": shipping_method,
+        "shipping_methods": ShippingMethod.objects.filter(activo=True).order_by("orden", "id"),
+        "shipping_selected_id": int(selected_id) if selected_id else None,
+        "ENVIO_GRATIS_DESDE": ENVIO_GRATIS_DESDE,
         "total": total,
     }
     return render(request, "carrito/ver.html", ctx)

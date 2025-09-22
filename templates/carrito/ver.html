@@ -2,9 +2,10 @@
 {% block title %}Carrito{% endblock %}
 {% block content %}
 <h1>Carrito</h1>
+
 {% if cart_count %}
 <table class="table align-middle">
-  <thead><tr><th>Producto</th><th>Cantidad</th><th class="text-end">Subtotal</th><th></th></tr></thead>
+  <thead><tr><th>Producto</th><th style="width:180px">Cantidad</th><th class="text-end">Subtotal</th><th></th></tr></thead>
   <tbody>
     {% for item in cart %}
     <tr>
@@ -12,7 +13,7 @@
       <td>
         <form action="{% url 'carrito:carrito_update' item.product.id %}" method="post" class="d-flex gap-2">
           {% csrf_token %}
-          <input type="number" class="form-control form-control-sm" style="width:90px" name="qty" value="{{ item.qty }}" min="0" max="{{ item.product.stock }}">
+          <input type="number" class="form-control form-control-sm" name="qty" value="{{ item.qty }}" min="0" max="{{ item.product.stock }}">
           <button class="btn btn-sm btn-primary">Actualizar</button>
         </form>
       </td>
@@ -27,7 +28,7 @@
 
 <div class="row g-3">
   <div class="col-md-6">
-    <form method="post" action="{% url 'carrito:set_shipping_method' %}" class="card card-body">
+    <form method="post" action="{% url 'carrito:seleccionar_envio' %}" class="card card-body">
       {% csrf_token %}
       <label class="form-label">Método de entrega</label>
       <select class="form-select" name="shipping_method_id">
@@ -43,20 +44,20 @@
 
   <div class="col-md-6">
     <div class="card card-body">
-      <div class="d-flex justify-content-between"><span>Subtotal</span><strong>{{ cart.total }} {{ MONEDA }}</strong></div>
-      {% if cart.total >= ENVIO_GRATIS_DESDE %}
+      <div class="d-flex justify-content-between"><span>Subtotal</span><strong>{{ subtotal }} {{ MONEDA }}</strong></div>
+      {% if subtotal >= ENVIO_GRATIS_DESDE %}
         <div class="d-flex justify-content-between text-success">
           <span>Envío</span><strong>0.00 {{ MONEDA }} (¡envío gratis!)</strong>
         </div>
         <div class="d-flex justify-content-between fs-5 mt-2">
-          <span>Total</span><strong>{{ cart.total }} {{ MONEDA }}</strong>
+          <span>Total</span><strong>{{ subtotal }} {{ MONEDA }}</strong>
         </div>
       {% else %}
         <div class="d-flex justify-content-between">
           <span>Envío</span><strong>{{ shipping_cost }} {{ MONEDA }}</strong>
         </div>
         <div class="d-flex justify-content-between fs-5 mt-2">
-          <span>Total</span><strong>{{ cart.total|add:shipping_cost }} {{ MONEDA }}</strong>
+          <span>Total</span><strong>{{ total }} {{ MONEDA }}</strong>
         </div>
       {% endif %}
       <a href="{% url 'pedidos:checkout_datos' %}" class="btn btn-success mt-3">Finalizar compra</a>

@@ -1,0 +1,57 @@
+{% extends "admin/admin_base.html" %}
+{% block title %}Pedido {{ pedido.id }}{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Pedido #{{ pedido.id }}</h1>
+<div class="row">
+  <div class="col-md-8">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Artículos</h5>
+        <ul class="list-group list-group-flush">
+          {% for it in pedido.items.all %}
+            <li class="list-group-item d-flex justify-content-between">
+              <span>×{{ it.cantidad }} — {{ it.producto.nombre }} ({{ it.talla }})</span>
+              <span>€ {{ it.total }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6>Estado</h6>
+        <form method="post">{% csrf_token %}
+          <select name="estado" class="form-select mb-2">
+            {% for k,v in pedido.ESTADOS %}
+              <option value="{{ k }}" {% if pedido.estado == k %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-primary btn-sm">Actualizar</button>
+        </form>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h6>Resumen</h6>
+        <p class="mb-1"><strong>Subtotal:</strong> € {{ pedido.subtotal }}</p>
+        <p class="mb-1"><strong>Impuestos:</strong> € {{ pedido.impuestos }}</p>
+        <p class="mb-1"><strong>Envío:</strong> € {{ pedido.coste_entrega }}</p>
+        <p class="mb-1"><strong>Descuento:</strong> € {{ pedido.descuento }}</p>
+        <hr>
+        <p class="mb-0"><strong>Total:</strong> € {{ pedido.total }}</p>
+      </div>
+    </div>
+    <div class="card mt-3">
+      <div class="card-body">
+        <h6>Entrega</h6>
+        <p class="mb-1">{{ pedido.nombre }}</p>
+        <p class="mb-1">{{ pedido.direccion }}</p>
+        <p class="mb-1">{{ pedido.codigo_postal }} {{ pedido.ciudad }}</p>
+        <p class="mb-0">{{ pedido.email }} · {{ pedido.telefono }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
