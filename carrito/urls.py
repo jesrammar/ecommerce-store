@@ -4,11 +4,8 @@ from . import views
 app_name = "carrito"
 
 urlpatterns = [
-    path("", views.ver_carrito, name="carrito_ver"),
-    path("add/<int:pid>/", views.add, name="carrito_add"),
-    path("update/<int:pid>/", views.update, name="carrito_update"),
-    path("remove/<int:pid>/", views.remove, name="carrito_remove"),
-    path("clear/", views.clear, name="carrito_clear"),
-    path("seleccionar-envio/", views.seleccionar_envio, name="seleccionar_envio"),
-
+    path("", views.carrito_ver, name="carrito_ver"),
+    path("add/<int:product_id>/", views.carrito_add, name="carrito_add"),
+    path("update/<int:product_id>/", views.carrito_update, name="carrito_update"),
+    path("remove/<int:product_id>/", views.carrito_remove, name="carrito_remove"),
 ]
