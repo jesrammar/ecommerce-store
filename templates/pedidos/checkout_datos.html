@@ -1,9 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Checkout - Datos{% endblock %}
+{% block title %}Datos de envío{% endblock %}
 {% block content %}
-<h1>Datos de envío</h1>
-<form method="post">{% csrf_token %}
+<h1 class="h3 mb-3">Datos de envío</h1>
+<form method="post" class="card card-body">
+  {% csrf_token %}
   {{ form.as_p }}
-  <button class="btn btn-primary">Continuar al pago</button>
+  <div class="d-flex justify-content-end gap-2">
+    <a href="{% url 'carrito:carrito_ver' %}" class="btn btn-outline-secondary">Volver al carrito</a>
+    <button class="btn btn-primary">Continuar</button>
+  </div>
 </form>
 {% endblock %}

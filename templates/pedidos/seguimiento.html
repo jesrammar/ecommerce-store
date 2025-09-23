@@ -1,11 +1,19 @@
 {% extends "base.html" %}
-{% block title %}Seguimiento{% endblock %}
+{% block title %}Seguimiento de pedido{% endblock %}
 {% block content %}
-<h1>Seguimiento de pedido</h1>
-<p>Pedido #{{ pedido.id }} — Estado pago: {{ pedido.pago_estado }}</p>
+<h1 class="h3 mb-3">Seguimiento del pedido</h1>
+<p><strong>Pedido #{{ pedido.id }}</strong></p>
+<ul class="list-unstyled">
+  <li><strong>Fecha:</strong> {{ pedido.created_at|date:"d/m/Y H:i" }}</li>
+  <li><strong>Cliente:</strong> {{ pedido.nombre }} — {{ pedido.email }}</li>
+  <li><strong>Estado de pago:</strong> {{ pedido.pago_estado }}</li>
+  <li><strong>Total:</strong> {{ pedido.total }} {{ MONEDA|default:"€" }}</li>
+</ul>
+
+<h2 class="h5 mt-4">Artículos</h2>
 <ul>
   {% for it in pedido.items.all %}
-  <li>{{ it.titulo }} × {{ it.cantidad }} — {{ it.subtotal }} €</li>
+    <li>{{ it.titulo }} × {{ it.cantidad }} — {{ it.subtotal }} {{ MONEDA|default:"€" }}</li>
   {% endfor %}
 </ul>
 {% endblock %}
