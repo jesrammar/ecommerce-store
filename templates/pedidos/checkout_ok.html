@@ -1,11 +1,21 @@
 {% extends "base.html" %}
 {% block title %}Pedido confirmado{% endblock %}
 {% block content %}
-<h1>¡Gracias por tu compra!</h1>
-<p>Tu pedido <strong>#{{ pedido.id }}</strong> ha sido recibido.</p>
-<p>Método de pago: <strong>{{ pedido.get_pago_metodo_display }}</strong></p>
-<p>Estado del pago: <strong>{{ pedido.pago_estado }}</strong></p>
-<p>Total: <strong>{{ pedido.total }} {{ MONEDA }}</strong></p>
+<h1 class="h3 mb-3">¡Gracias por tu compra!</h1>
+<p>Tu pedido <strong>#{{ pedido.id }}</strong> se ha registrado correctamente.</p>
 
-<a class="btn btn-primary mt-3" href="{% url 'productos:catalogo' %}">Volver al catálogo</a>
+<ul class="list-unstyled">
+  <li><strong>Total:</strong> {{ pedido.total }} {{ MONEDA|default:"€" }}</li>
+  <li><strong>Estado de pago:</strong> {{ pedido.pago_estado }}</li>
+  <li><strong>Método de pago:</strong> {{ pedido.pago_metodo }}</li>
+</ul>
+
+<p>Puedes seguir el estado en este enlace:</p>
+<p>
+  <a href="{% url 'pedidos:seguimiento' pedido.tracking_token %}">
+    /seguimiento/{{ pedido.tracking_token }}/
+  </a>
+</p>
+
+<a href="{% url 'productos:catalogo' %}" class="btn btn-primary mt-3">Volver al catálogo</a>
 {% endblock %}

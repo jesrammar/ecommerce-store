@@ -1,19 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Pagar con tarjeta{% endblock %}
+{% block title %}Pago con tarjeta{% endblock %}
 {% block content %}
-<h1>Pagar con tarjeta</h1>
-<p>Pedido #{{ pedido.id }} — Total: <strong>{{ pedido.total }} {{ MONEDA }}</strong></p>
-<p>Serás redirigido a Stripe para completar el pago de forma segura.</p>
+<h1 class="h3 mb-3">Pago con tarjeta</h1>
 
-<button id="pay" class="btn btn-primary">Pagar ahora</button>
-
-<script src="https://js.stripe.com/v3/"></script>
-<script>
-  const stripe = Stripe("{{ STRIPE_PUBLIC_KEY }}");
-  document.getElementById("pay").addEventListener("click", async () => {
-    const sessionId = "{{ session_id }}";
-    const { error } = await stripe.redirectToCheckout({ sessionId });
-    if (error) { alert(error.message || "No se pudo iniciar el pago."); }
-  });
-</script>
+{% if modo_demo %}
+  <div class="alert alert-warning">
+    Stripe no está configurado. Esto es una pantalla de demostración.
+  </div>
+  <p>Pedido #{{ pedido.id }} — Total: {{ pedido.total }} {{ MONEDA|default:"€" }}</p>
+  <a href="{% url 'pedidos:checkout_ok' pedido.id %}" class="btn btn-success">Simular éxito</a>
+{% else %}
+  <p>Redirigiendo a Stripe Checkout…</p>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    const stripe = Stripe("{{ STRIPE_PUBLIC_KEY }}");
+    stripe.redirectToCheckout({ sessionId: "{{ session_id }}" });
+  </script>
+{% endif %}
 {% endblock %}
