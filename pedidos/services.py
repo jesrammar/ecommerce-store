@@ -8,6 +8,10 @@ from .models import Pedido, PedidoItem, ShippingMethod
 
 @transaction.atomic
 def crear_pedido_desde_carrito(request, datos):
+    """
+    Crea pedido final (contrareembolso). Descuenta stock en el momento.
+    Envía email de confirmación y limpia la sesión/carrito.
+    """
     cart = Cart(request)
     if cart.count() == 0:
         raise ValueError("El carrito está vacío")
@@ -26,17 +30,17 @@ def crear_pedido_desde_carrito(request, datos):
         pago_estado="pendiente" if pago_metodo == "contrareembolso" else "iniciado",
     )
 
+    # líneas + subtotal (contrareembolso descuenta stock ya)
     subtotal = Decimal("0.00")
     for item in cart:
         p = item["product"]
         qty = int(item["qty"])
-
         if p.stock < qty:
             raise ValueError(f"Sin stock suficiente para {p.nombre}")
 
-        if pago_metodo == "contrareembolso":
-            p.stock -= qty
-            p.save(update_fields=["stock"])
+        # Descuento de stock
+        p.stock -= qty
+        p.save(update_fields=["stock"])
 
         line_total = Decimal(str(item["subtotal"]))
         PedidoItem.objects.create(
@@ -65,49 +69,26 @@ def crear_pedido_desde_carrito(request, datos):
     pedido.total = subtotal + shipping_cost
     pedido.save(update_fields=["envio_metodo", "envio_coste", "total"])
 
-    # limpiar solo en contrareembolso
-    if pago_metodo == "contrareembolso":
-        try:
-            cart.clear()
-        except Exception:
-            pass
-        for k in ("checkout_datos", "checkout_pago", "shipping_method_id"):
-            request.session.pop(k, None)
-
-    # email confirmación (solo texto)
-    moneda = getattr(settings, "MONEDA", "€")
-    lineas = "\n".join(
-        f"   - {it.titulo} x{it.cantidad} = {it.subtotal} {moneda}"
-        for it in pedido.items.all()
-    )
-    asunto = f"Confirmación de pedido #{pedido.id}"
-    cuerpo = (
-        f"Hola {pedido.nombre},\n\n"
-        f"Gracias por tu compra en nuestra tienda.\n\n"
-        f"Detalles del pedido #{pedido.id}:\n"
-        f"{lineas}\n"
-        f"   Envío: {pedido.envio_coste} {moneda}\n"
-        f"   Total: {pedido.total} {moneda}\n\n"
-        f"Dirección de entrega:\n"
-        f"{pedido.direccion}\n{pedido.cp} {pedido.ciudad}\n\n"
-        f"Seguimiento: {getattr(settings, 'SITE_URL', 'http://127.0.0.1:8000')}/seguimiento/{pedido.tracking_token}/\n"
-    )
+    # limpiar
     try:
-        send_mail(
-            asunto,
-            cuerpo,
-            getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@example.com"),
-            [pedido.email],
-        )
+        cart.clear()
     except Exception:
         pass
+    for k in ("checkout_datos", "checkout_pago", "shipping_method_id"):
+        request.session.pop(k, None)
 
+    # Email
+    _enviar_email_confirmacion(pedido)
     return pedido
 
 
 @transaction.atomic
 def crear_pedido_tarjeta_pre(request, datos):
-    """Crea un pedido preliminar con pago 'tarjeta' y estado 'iniciado' (sin tocar stock)."""
+    """
+    Crea pedido PRELIMINAR para pago con tarjeta (estado 'iniciado').
+    No descuenta stock aún; se descuenta cuando el webhook confirma el pago.
+    Devuelve (pedido, totales_dict).
+    """
     cart = Cart(request)
     if cart.count() == 0:
         raise ValueError("El carrito está vacío")
@@ -139,6 +120,7 @@ def crear_pedido_tarjeta_pre(request, datos):
         )
         subtotal += line_total
 
+    # envío
     shipping_cost = Decimal("0.00")
     method = None
     method_id = request.session.get("shipping_method_id")
@@ -155,3 +137,31 @@ def crear_pedido_tarjeta_pre(request, datos):
     pedido.save(update_fields=["envio_metodo", "envio_coste", "total"])
 
     return pedido, {"subtotal": subtotal, "shipping_cost": shipping_cost, "total": pedido.total}
+
+
+def _enviar_email_confirmacion(pedido):
+    moneda = getattr(settings, "MONEDA", "€")
+    lineas = "\n".join(
+        f"   - {it.titulo} x{it.cantidad} = {it.subtotal} {moneda}"
+        for it in pedido.items.all()
+    )
+    asunto = f"Confirmación de pedido #{pedido.id}"
+    cuerpo = (
+        f"Hola {pedido.nombre},\n\n"
+        f"Gracias por tu compra.\n\n"
+        f"Detalles del pedido #{pedido.id}:\n"
+        f"{lineas}\n"
+        f"   Envío: {pedido.envio_coste} {moneda}\n"
+        f"   Total: {pedido.total} {moneda}\n\n"
+        f"Dirección:\n{pedido.direccion}\n{pedido.cp} {pedido.ciudad}\n\n"
+        f"Seguimiento: {getattr(settings, 'SITE_URL', 'http://127.0.0.1:8000')}/seguimiento/{pedido.tracking_token}/\n"
+    )
+    try:
+        send_mail(
+            asunto,
+            cuerpo,
+            getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@example.com"),
+            [pedido.email],
+        )
+    except Exception:
+        pass
