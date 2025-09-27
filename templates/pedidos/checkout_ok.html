@@ -1,21 +1,39 @@
 {% extends "base.html" %}
-{% block title %}Pedido confirmado{% endblock %}
+{% load static %}
+
 {% block content %}
-<h1 class="h3 mb-3">¡Gracias por tu compra!</h1>
-<p>Tu pedido <strong>#{{ pedido.id }}</strong> se ha registrado correctamente.</p>
+<div class="container py-4">
+  <h2 class="mb-4">¡Gracias por tu compra!</h2>
 
-<ul class="list-unstyled">
-  <li><strong>Total:</strong> {{ pedido.total }} {{ MONEDA|default:"€" }}</li>
-  <li><strong>Estado de pago:</strong> {{ pedido.pago_estado }}</li>
-  <li><strong>Método de pago:</strong> {{ pedido.pago_metodo }}</li>
-</ul>
+  {% if messages %}
+    <div class="mb-3">
+      {% for m in messages %}
+        <div class="alert alert-{{ m.tags|default:'info' }} mb-2">{{ m }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
 
-<p>Puedes seguir el estado en este enlace:</p>
-<p>
-  <a href="{% url 'pedidos:seguimiento' pedido.tracking_token %}">
-    /seguimiento/{{ pedido.tracking_token }}/
-  </a>
-</p>
+  <p>Tu pedido <strong>#{{ pedido.id }}</strong> se ha registrado correctamente.</p>
 
-<a href="{% url 'productos:catalogo' %}" class="btn btn-primary mt-3">Volver al catálogo</a>
+  <ul class="list-unstyled">
+    <li><strong>Total:</strong> {{ pedido.total }} {{ MONEDA|default:"€" }}</li>
+    <li><strong>Estado de pago:</strong> {{ pedido.pago_estado }}</li>
+    <li><strong>Método de pago:</strong> {{ pedido.pago_metodo }}</li>
+  </ul>
+
+  <p class="mt-3">Puedes seguir el estado en este enlace:</p>
+
+  {% if pedido.tracking_token %}
+    <p>
+      <a class="btn btn-outline-primary"
+         href="{% url 'pedidos:seguimiento' pedido.tracking_token %}">Ver seguimiento</a>
+    </p>
+  {% else %}
+    <p class="text-muted">Seguimiento no disponible para este pedido.</p>
+  {% endif %}
+
+  <p class="mt-4">
+    <a class="btn btn-secondary" href="{% url 'productos:catalogo' %}">Seguir comprando</a>
+  </p>
+</div>
 {% endblock %}

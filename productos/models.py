@@ -20,7 +20,6 @@ class Categoria(models.Model):
         ]
 
     def save(self, *args, **kwargs):
-        # Genera/normaliza slug en ASCII
         self.slug = slugify(self.slug or self.nombre)
         super().save(*args, **kwargs)
 
@@ -61,12 +60,12 @@ class Producto(models.Model):
     descripcion = models.TextField(blank=True)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)
-    # Requisito: una imagen por producto. En dev la dejo opcional; en prod quita blank=True si quieres forzarlo.
-    imagen = models.ImageField(upload_to="productos/", blank=True)
+    imagen = models.ImageField(upload_to="productos/", blank=True)  # pon null=True si quieres
     activo = models.BooleanField(default=True)
     destacado = models.BooleanField(default=False)
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
+    permite_personalizacion = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-creado"]
@@ -82,7 +81,6 @@ class Producto(models.Model):
         ]
 
     def save(self, *args, **kwargs):
-        # Genera/normaliza slug (ASCII) tanto si viene vacío como si viene con acentos
         self.slug = slugify(self.slug or self.nombre)
         super().save(*args, **kwargs)
 
@@ -95,3 +93,26 @@ class Producto(models.Model):
 
     def __str__(self) -> str:
         return self.nombre
+
+
+class Variante(models.Model):
+    producto = models.ForeignKey(
+        Producto, related_name="variantes", on_delete=models.CASCADE
+    )
+    talla = models.CharField(max_length=10)      # S, M, L, XL...
+    color = models.CharField(max_length=30)      # nombre o #hex
+    stock = models.PositiveIntegerField(default=0)
+    extra_precio = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+
+    class Meta:
+        unique_together = ("producto", "talla", "color")
+        verbose_name = "Variante"
+        verbose_name_plural = "Variantes"
+        indexes = [
+            models.Index(fields=["producto"]),
+            models.Index(fields=["talla"]),
+            models.Index(fields=["color"]),
+        ]
+
+    def __str__(self):
+        return f"{self.producto.nombre} - {self.talla} - {self.color}"

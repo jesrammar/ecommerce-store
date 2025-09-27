@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.crypto import get_random_string
 from decimal import Decimal
+from django.db.models import JSONField
 
 class ShippingMethod(models.Model):
     nombre = models.CharField(max_length=80)
@@ -44,4 +45,7 @@ class PedidoItem(models.Model):
     precio_unit = models.DecimalField(max_digits=10, decimal_places=2)
     cantidad = models.PositiveIntegerField(default=1)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+    variante = models.ForeignKey("productos.Variante", null=True, blank=True, on_delete=models.SET_NULL)
+    personalizacion = models.JSONField(default=dict, blank=True)
+    
     def __str__(self): return f"{self.titulo} x{self.cantidad}"

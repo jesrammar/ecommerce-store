@@ -1,19 +1,54 @@
 {% extends "base.html" %}
-{% block title %}Seguimiento de pedido{% endblock %}
-{% block content %}
-<h1 class="h3 mb-3">Seguimiento del pedido</h1>
-<p><strong>Pedido #{{ pedido.id }}</strong></p>
-<ul class="list-unstyled">
-  <li><strong>Fecha:</strong> {{ pedido.created_at|date:"d/m/Y H:i" }}</li>
-  <li><strong>Cliente:</strong> {{ pedido.nombre }} — {{ pedido.email }}</li>
-  <li><strong>Estado de pago:</strong> {{ pedido.pago_estado }}</li>
-  <li><strong>Total:</strong> {{ pedido.total }} {{ MONEDA|default:"€" }}</li>
-</ul>
+{% load static %}
 
-<h2 class="h5 mt-4">Artículos</h2>
-<ul>
-  {% for it in pedido.items.all %}
-    <li>{{ it.titulo }} × {{ it.cantidad }} — {{ it.subtotal }} {{ MONEDA|default:"€" }}</li>
-  {% endfor %}
-</ul>
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">Seguimiento del pedido</h2>
+
+  <div class="row">
+    <div class="col-md-6">
+      <p class="mb-1"><strong>Pedido #</strong>{{ pedido.id }}</p>
+      <p class="mb-1"><strong>Cliente:</strong> {{ pedido.nombre|default:"—" }}</p>
+      <p class="mb-1"><strong>Estado de pago:</strong> {{ pedido.pago_estado|default:"—" }}</p>
+      <p class="mb-1"><strong>Total:</strong> {{ pedido.total }} {{ MONEDA|default:"€" }}</p>
+    </div>
+    <div class="col-md-6">
+      <p class="mb-1"><strong>Método pago:</strong> {{ pedido.pago_metodo|default:"—" }}</p>
+      <p class="mb-1"><strong>Método envío:</strong> {{ pedido.envio_metodo.nombre|default:"—" }}</p>
+      <p class="mb-1"><strong>Coste envío:</strong> {{ pedido.envio_coste|default:"0.00" }} {{ MONEDA|default:"€" }}</p>
+      {# Token enmascarado #}
+      <p class="mb-1"><strong>Token:</strong> {{ pedido.tracking_token|slice:":6" }}••••••</p>
+    </div>
+  </div>
+
+  <hr class="my-4">
+
+  <h4>Artículos</h4>
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th class="text-end">Cant.</th>
+          <th class="text-end">Precio</th>
+          <th class="text-end">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for it in pedido.items.all %}
+          <tr>
+            <td>{{ it.titulo }}</td>
+            <td class="text-end">{{ it.cantidad }}</td>
+            <td class="text-end">{{ it.precio_unit }}</td>
+            <td class="text-end">{{ it.subtotal }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="text-muted">No hay líneas en este pedido.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

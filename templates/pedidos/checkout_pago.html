@@ -1,13 +1,99 @@
 {% extends "base.html" %}
-{% block title %}Método de pago{% endblock %}
+{% load static %}
+
 {% block content %}
-<h1 class="h3 mb-3">Método de pago</h1>
-<form method="post" class="card card-body">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <div class="d-flex justify-content-end gap-2">
-    <a href="{% url 'pedidos:checkout_datos' %}" class="btn btn-outline-secondary">Atrás</a>
-    <button class="btn btn-success">Continuar</button>
+<div class="container py-4">
+  <h2 class="mb-4">Confirma tu pedido</h2>
+
+  {% if messages %}
+    <div class="mb-3">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} mb-2">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <h5 class="card-title mb-3">Datos de envío</h5>
+      <div class="row">
+        <div class="col-md-6">
+          <p class="mb-1"><strong>Nombre:</strong> {{ datos.nombre }}</p>
+          <p class="mb-1"><strong>Apellidos:</strong> {{ datos.apellidos }}</p>
+          <p class="mb-1"><strong>Email:</strong> {{ datos.email }}</p>
+          <p class="mb-1"><strong>Teléfono:</strong> {{ datos.telefono }}</p>
+        </div>
+        <div class="col-md-6">
+          <p class="mb-1"><strong>Dirección:</strong> {{ datos.direccion }}</p>
+          <p class="mb-1"><strong>Ciudad:</strong> {{ datos.ciudad }}</p>
+          <p class="mb-1"><strong>Provincia:</strong> {{ datos.provincia }}</p>
+          <p class="mb-1"><strong>Código Postal:</strong> {{ datos.cp }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between flex-wrap gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'pedidos:checkout_datos' %}">Editar datos</a>
+    </div>
   </div>
-</form>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <h5 class="card-title mb-3">Método de envío</h5>
+
+      {% if ENVIO_GRATIS_DESDE and subtotal >= ENVIO_GRATIS_DESDE %}
+        <div class="alert alert-success py-2">
+          Envío gratis (a partir de {{ ENVIO_GRATIS_DESDE }} {{ MONEDA|default:"€" }})
+        </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'pedidos:seleccionar_envio' %}">
+        {% csrf_token %}
+        <div class="list-group">
+          {% for m in metodos_envio %}
+            <label class="list-group-item d-flex justify-content-between align-items-center">
+              <span>
+                <input class="form-check-input me-2" type="radio" name="shipping_method_id"
+                       value="{{ m.id }}" {% if seleccionado == m.id %}checked{% endif %}>
+                <strong>{{ m.nombre }}</strong>
+                {% if m.descripcion %}<small class="text-muted ms-2">{{ m.descripcion }}</small>{% endif %}
+              </span>
+              <span class="fw-semibold">
+                {% if subtotal < ENVIO_GRATIS_DESDE %}{{ m.coste }} {{ MONEDA|default:"€" }}{% else %}0.00 {{ MONEDA|default:"€" }}{% endif %}
+              </span>
+            </label>
+          {% empty %}
+            <div class="text-muted">No hay métodos de envío configurados.</div>
+          {% endfor %}
+        </div>
+        <div class="d-flex justify-content-end mt-3">
+          <button class="btn btn-outline-primary" type="submit">Actualizar envío</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="card-title mb-3">Resumen</h5>
+      <div class="row">
+        <div class="col-md-4"><strong>Subtotal:</strong></div>
+        <div class="col-md-8 text-end">{{ subtotal }} {{ MONEDA|default:"€" }}</div>
+        <div class="col-md-4"><strong>Envío:</strong></div>
+        <div class="col-md-8 text-end">{{ envio }} {{ MONEDA|default:"€" }}</div>
+      </div>
+      <hr>
+      <div class="d-flex justify-content-between">
+        <strong>Total:</strong>
+        <strong>{{ total_preview }} {{ MONEDA|default:"€" }}</strong>
+      </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between flex-wrap gap-2">
+      <form method="post" action="{% url 'pedidos:checkout_pago' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Confirmar pedido (contrareembolso)</button>
+      </form>
+      <a class="btn btn-success" href="{% url 'pedidos:checkout_tarjeta' %}">Pagar con tarjeta</a>
+    </div>
+  </div>
+</div>
 {% endblock %}

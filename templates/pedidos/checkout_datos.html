@@ -1,13 +1,60 @@
 {% extends "base.html" %}
-{% block title %}Datos de envío{% endblock %}
+{% load static %}
+
 {% block content %}
-<h1 class="h3 mb-3">Datos de envío</h1>
-<form method="post" class="card card-body">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <div class="d-flex justify-content-end gap-2">
-    <a href="{% url 'carrito:carrito_ver' %}" class="btn btn-outline-secondary">Volver al carrito</a>
-    <button class="btn btn-primary">Continuar</button>
-  </div>
-</form>
+<div class="container py-4">
+  <h2 class="mb-4">Datos de envío</h2>
+
+  {% if messages %}
+    <div class="mb-3">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} mb-2">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" action="{% url 'pedidos:checkout_datos' %}" class="card shadow-sm">
+    {% csrf_token %}
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Nombre</label>
+          <input type="text" name="nombre" class="form-control" value="{{ datos.nombre|default_if_none:'' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Apellidos</label>
+          <input type="text" name="apellidos" class="form-control" value="{{ datos.apellidos|default_if_none:'' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" class="form-control" value="{{ datos.email|default_if_none:'' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Teléfono</label>
+          <input type="text" name="telefono" class="form-control" value="{{ datos.telefono|default_if_none:'' }}">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Dirección</label>
+          <input type="text" name="direccion" class="form-control" value="{{ datos.direccion|default_if_none:'' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Ciudad</label>
+          <input type="text" name="ciudad" class="form-control" value="{{ datos.ciudad|default_if_none:'' }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Provincia</label>
+          <input type="text" name="provincia" class="form-control" value="{{ datos.provincia|default_if_none:'' }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Código Postal</label>
+          <input type="text" name="cp" class="form-control" value="{{ datos.cp|default_if_none:'' }}">
+        </div>
+      </div>
+    </div>
+    <div class="card-footer d-flex justify-content-end gap-2">
+      <a href="{% url 'carrito:carrito_ver' %}" class="btn btn-outline-secondary">Volver al carrito</a>
+      <button type="submit" class="btn btn-primary">Continuar</button>
+    </div>
+  </form>
+</div>
 {% endblock %}

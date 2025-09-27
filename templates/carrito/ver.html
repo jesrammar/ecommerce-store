@@ -12,45 +12,72 @@
       <thead>
         <tr>
           <th>Producto</th>
-          <th style="width:140px;">Cantidad</th>
+          <th style="width:180px;">Cantidad</th>
           <th class="text-end">Precio</th>
           <th class="text-end">Subtotal</th>
           <th></th>
         </tr>
       </thead>
+
       <tbody>
         {% for item in cart %}
           <tr>
             <td>
               <div class="d-flex align-items-center gap-3">
-                {% if item.product.imagen %}
-                  <img src="{{ item.product.imagen.url }}" alt="{{ item.product.nombre }}" width="60" class="rounded">
-                {% else %}
-                  <img src="{% static 'img/placeholder.png' %}" alt="" width="60" class="rounded">
-                {% endif %}
+                {# Si tu iterador no trae imagen, mostramos un placeholder #}
+                <img src="{% static 'img/placeholder.png' %}" alt="" width="60" class="rounded">
+
                 <div>
-                  <div class="fw-semibold">{{ item.product.nombre }}</div>
-                  {% if item.product.stock == 0 %}
-                    <span class="badge bg-secondary">Agotado</span>
+                  {# Enlace al detalle si tenemos slug #}
+                  {% if item.slug %}
+                    <div class="fw-semibold">
+                      <a href="{% url 'productos:producto_detalle' slug=item.slug %}" class="link-body-emphasis">
+                        {{ item.name }}
+                      </a>
+                    </div>
+                  {% else %}
+                    <div class="fw-semibold">{{ item.name }}</div>
+                  {% endif %}
+
+                  {# Meta/opciones de personalización #}
+                  {% if item.meta %}
+                    <div class="small text-muted mt-1">
+                      {% if item.meta.talla %}Talla: {{ item.meta.talla }}{% endif %}
+                      {% if item.meta.color %}{% if item.meta.talla %} · {% endif %}Color: {{ item.meta.color }}{% endif %}
+                    </div>
+                    {% if item.meta.personalizacion.preview_url %}
+                      <div>
+                        <img src="{{ item.meta.personalizacion.preview_url }}"
+                             style="max-width:120px" class="border rounded mt-1" alt="Vista previa">
+                      </div>
+                    {% endif %}
                   {% endif %}
                 </div>
               </div>
             </td>
+
             <td>
-              <form action="{% url 'carrito:carrito_update' item.product.id %}" method="post" class="d-flex gap-2">
+              <form action="{% url 'carrito:carrito_update' item.product_id %}"
+                    method="post" class="d-flex gap-2">
                 {% csrf_token %}
-                <input type="number" name="qty" class="form-control form-control-sm" value="{{ item.qty }}" min="0" max="{{ item.product.stock }}">
+                <input type="number" name="qty"
+                       class="form-control form-control-sm"
+                       value="{{ item.qty }}" min="0">
                 <button class="btn btn-sm btn-outline-primary">Actualizar</button>
               </form>
             </td>
+
             <td class="text-end">{{ item.price }} €</td>
             <td class="text-end">{{ item.subtotal }} €</td>
+
             <td class="text-end">
-              <a href="{% url 'carrito:carrito_remove' item.product.id %}" class="btn btn-sm btn-outline-danger">Quitar</a>
+              <a href="{% url 'carrito:carrito_remove' item.product_id %}"
+                 class="btn btn-sm btn-outline-danger">Quitar</a>
             </td>
           </tr>
         {% endfor %}
       </tbody>
+
       <tfoot>
         <tr>
           <th colspan="3" class="text-end">Total</th>
