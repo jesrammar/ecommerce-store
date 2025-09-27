@@ -1,13 +1,63 @@
 {% extends "base.html" %}
-{% block title %}Pago con tarjeta{% endblock %}
+{% load static %}
 
 {% block content %}
-<h1>Redirigiendo a Stripe…</h1>
-<p>Pedido #{{ pedido.id }}</p>
+<div class="container py-4">
+  <h2 class="mb-4">Pagar con tarjeta</h2>
+
+  {% if messages %}
+    <div class="mb-3">
+      {% for m in messages %}
+        <div class="alert alert-{{ m.tags|default:'info' }} mb-2">{{ m }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <p class="text-muted mb-3">
+        Tarjeta de pruebas: <code>4242 4242 4242 4242</code> (cualquier fecha y CVC).
+      </p>
+
+      <form id="payment-form">
+        <div id="card-element" class="mb-3"></div>
+        <button id="pay-btn" class="btn btn-primary" type="submit">Pagar ahora</button>
+        <div id="pay-error" class="text-danger mt-3" style="display:none;"></div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <script src="https://js.stripe.com/v3/"></script>
 <script>
   const stripe = Stripe("{{ STRIPE_PUBLIC_KEY }}");
-  stripe.redirectToCheckout({ sessionId: "{{ session_id }}" });
+  const elements = stripe.elements();
+  const card = elements.create("card");
+  card.mount("#card-element");
+
+  const form = document.getElementById("payment-form");
+  const btn  = document.getElementById("pay-btn");
+  const err  = document.getElementById("pay-error");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault(); btn.disabled = true; err.style.display = "none";
+    try {
+      const resp = await fetch("{% url 'pedidos:checkout_tarjeta' %}", {
+        method: "POST",
+        headers: {"X-CSRFToken": "{{ csrf_token }}"},
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || "Error creando el pago");
+
+      const {error} = await stripe.confirmCardPayment(data.client_secret, {payment_method: {card}});
+      if (error) throw new Error(error.message);
+
+      window.location.href = "{% url 'pedidos:checkout_ok' 0 %}".replace("/0/", `/${data.pedido_id}/`);
+    } catch (e) {
+      err.textContent = e.message || String(e);
+      err.style.display = "block";
+      btn.disabled = false;
+    }
+  });
 </script>
 {% endblock %}

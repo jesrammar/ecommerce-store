@@ -4,22 +4,164 @@
 {% block title %}{{ producto.nombre }}{% endblock %}
 
 {% block content %}
-<h1>{{ producto.nombre }}</h1>
+<h1 class="mb-3">{{ producto.nombre }}</h1>
 
-{% if producto.imagen %}
-  <img src="{{ producto.imagen.url }}" width="300" class="mb-3" alt="{{ producto.nombre }}">
-{% else %}
-  <img src="{% static 'img/placeholder.png' %}" width="300" class="mb-3" alt="{{ producto.nombre }}">
-{% endif %}
+<div class="row g-4">
+  <!-- Imagen / preview -->
+  <div class="col-md-6">
+    <img id="preview-img"
+         src="{% if producto.imagen %}{{ producto.imagen.url }}{% else %}{% static 'img/placeholder.png' %}{% endif %}"
+         class="img-fluid rounded border w-100"
+         alt="{{ producto.nombre }}">
+  </div>
 
-<p>{{ producto.descripcion }}</p>
-<p><strong>{{ producto.precio }} {{ MONEDA|default:"€" }}</strong></p>
+  <!-- Info + formulario -->
+  <div class="col-md-6">
+    <p class="text-muted mb-2">
+      {% if producto.categoria %}Categoría: <strong>{{ producto.categoria.nombre }}</strong>{% endif %}
+      {% if producto.marca %} · Marca: <strong>{{ producto.marca.nombre }}</strong>{% endif %}
+    </p>
 
-<form action="{% url 'carrito:carrito_add' producto.id %}" method="post" class="d-flex align-items-center gap-2">
-  {% csrf_token %}
-  <input type="number" name="qty" value="1" min="1" max="{{ producto.stock }}" class="form-control" style="width:120px;">
-  <button class="btn btn-primary" {% if producto.stock == 0 %}disabled{% endif %}>
-    Añadir al carrito
-  </button>
-</form>
+    <p class="fs-4 fw-semibold mb-2">
+      {{ producto.precio }} {{ MONEDA|default:"€" }}
+    </p>
+
+    {% if producto.descripcion %}
+      <p class="mb-3">{{ producto.descripcion }}</p>
+    {% endif %}
+
+    <!-- Formulario add-to-cart -->
+    <form action="{% url 'carrito:carrito_add' producto.id %}"
+          method="post"
+          class="vstack gap-3"
+          enctype="multipart/form-data">
+      {% csrf_token %}
+
+      {% if tallas or colores %}
+      <div class="row g-2">
+        {% if tallas %}
+        <div class="col-sm-6">
+          <label class="form-label">Talla</label>
+          <select name="var_talla" class="form-select">
+            <option value="">Selecciona talla</option>
+            {% for t in tallas %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+          </select>
+        </div>
+        {% endif %}
+        {% if colores %}
+        <div class="col-sm-6">
+          <label class="form-label">Color</label>
+          <select name="var_color" class="form-select">
+            <option value="">Selecciona color</option>
+            {% for c in colores %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+          </select>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if producto.permite_personalizacion %}
+      <hr class="my-2">
+      <h5 class="mb-2">Personalización</h5>
+
+      <div class="mb-2">
+        <label class="form-label">Texto</label>
+        <input type="text" name="texto" class="form-control" maxlength="30" placeholder="Tu texto…">
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label">Color del texto</label>
+        <input type="text" name="color_texto" class="form-control" value="#ffffff" placeholder="#RRGGBB">
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label">Imagen (opcional)</label>
+        <input type="file" name="imagen" class="form-control" accept="image/*">
+      </div>
+
+      <button class="btn btn-outline-secondary" type="button" id="btn-preview">
+        Generar vista previa
+      </button>
+      {% endif %}
+
+      <!-- Meta para carrito (variantes / personalización) -->
+      <input type="hidden" name="meta_json" id="meta-json" value="{}">
+
+      <!-- Cantidad + CTA -->
+      <div class="d-flex align-items-center gap-2 flex-wrap" style="max-width: 340px;">
+        <div class="d-flex align-items-center gap-2">
+          <input type="number"
+                 name="qty"
+                 value="1"
+                 min="1"
+                 max="{{ producto.stock }}"
+                 class="form-control"
+                 style="width:120px;"
+                 {% if producto.stock == 0 %}disabled{% endif %}>
+          <button class="btn btn-primary" {% if producto.stock == 0 %}disabled{% endif %}>
+            Añadir al carrito
+          </button>
+        </div>
+        {% if producto.stock > 0 %}
+          <small class="text-muted">Quedan {{ producto.stock }} uds.</small>
+        {% else %}
+          <div class="text-danger small">Este producto está agotado ahora mismo.</div>
+        {% endif %}
+      </div>
+    </form>
+
+    {% if variantes %}
+      <hr>
+      <p class="small text-muted mb-1">Variantes disponibles:</p>
+      <ul class="small text-muted mb-0">
+        {% for v in variantes %}
+          <li>{{ v.talla }} · {{ v.color }}{% if v.stock == 0 %} — <span class="text-danger">sin stock</span>{% endif %}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const btn = document.getElementById('btn-preview');
+  if (!btn) return;
+
+  btn.addEventListener('click', async function(){
+    const form = new FormData();
+    const texto = document.querySelector('[name="texto"]')?.value || '';
+    const color = document.querySelector('[name="color_texto"]')?.value || '#ffffff';
+    const imagenField = document.querySelector('[name="imagen"]');
+    if (imagenField && imagenField.files.length) {
+      form.append('imagen', imagenField.files[0]);
+    }
+    form.append('texto', texto);
+    form.append('color_texto', color);
+    form.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    try {
+      const url = "{% url 'productos:producto_preview' producto.slug %}";
+      const res = await fetch(url, { method: 'POST', body: form });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+
+      // Actualiza preview visual
+      const img = document.getElementById('preview-img');
+      if (data.preview_url) img.src = data.preview_url;
+
+      // Actualiza meta para el carrito
+      const meta = { personalizacion: { texto: texto, color_texto: color, preview_url: data.preview_url || null } };
+      const t = document.querySelector('[name="var_talla"]')?.value || null;
+      const c = document.querySelector('[name="var_color"]')?.value || null;
+      if (t) meta.talla = t;
+      if (c) meta.color = c;
+      document.getElementById('meta-json').value = JSON.stringify(meta);
+    } catch (e) {
+      alert('Error generando la vista previa. Inténtalo de nuevo.');
+    }
+  });
+})();
+</script>
 {% endblock %}

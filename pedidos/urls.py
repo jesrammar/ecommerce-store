@@ -8,6 +8,10 @@ urlpatterns = [
     path("checkout/pago/", views.checkout_pago, name="checkout_pago"),
     path("checkout/tarjeta/", views.checkout_tarjeta, name="checkout_tarjeta"),
     path("checkout/ok/<int:pedido_id>/", views.checkout_ok, name="checkout_ok"),
+
+    # Selección de envío (guarda en sesión)
+    path("envio/seleccionar/", views.seleccionar_envio, name="seleccionar_envio"),
+
     path("seguimiento/<str:token>/", views.seguimiento, name="seguimiento"),
-    path("stripe/webhook/", views.stripe_webhook, name="stripe_webhook"),
+    path("webhooks/stripe/", views.stripe_webhook, name="stripe_webhook"),
 ]

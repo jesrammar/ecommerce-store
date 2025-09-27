@@ -1,204 +1,147 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.conf import settings
-from django.urls import reverse
-from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse, HttpResponseBadRequest
-from decimal import Decimal
+from __future__ import annotations
 import stripe
+from decimal import Decimal
+from django.conf import settings
+from django.contrib import messages
+from django.http import JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods, require_POST
 
-from .forms import DatosEnvioForm, MetodoPagoForm
-from .services import crear_pedido_desde_carrito, crear_pedido_tarjeta_pre
-from .models import Pedido
-from productos.models import Producto
 from carrito.cart import Cart
+from .models import ShippingMethod
+from .services import (
+    crear_pedido_desde_carrito,
+    crear_pedido_tarjeta_pre,
+    confirmar_pedido_tarjeta_exitoso,
+)
 
+stripe.api_key = getattr(settings, "STRIPE_SECRET_KEY", "")
 
-# ---------- Paso 1: datos envío ----------
+@require_http_methods(["GET", "POST"])
 def checkout_datos(request):
     if request.method == "POST":
-        form = DatosEnvioForm(request.POST)
-        if form.is_valid():
-            data = form.cleaned_data
+        campos = ["nombre","apellidos","email","telefono","direccion","ciudad","cp","provincia"]
+        request.session["checkout_pago"] = {k: (request.POST.get(k) or "").strip() for k in campos}
+        return redirect("pedidos:checkout_pago")
+    return render(request, "pedidos/checkout_datos.html", {"datos": request.session.get("checkout_pago", {})})
 
-            # ⚠️ Importante: guarda SOLO IDs de método de envío en sesión, no objetos
-            shipping_method = data.get("envio_metodo")
-            if shipping_method:
-                request.session["shipping_method_id"] = shipping_method.id
-
-            # Guarda datos del cliente
-            request.session["checkout_datos"] = {
-                "email": data["email"],
-                "nombre": data["nombre"],
-                "telefono": data.get("telefono", ""),
-                "direccion": data["direccion"],
-                "ciudad": data["ciudad"],
-                "cp": data["cp"],
-            }
-            request.session.modified = True
-            return redirect("pedidos:checkout_pago")
-    else:
-        initial = request.session.get("checkout_datos", {})
-        form = DatosEnvioForm(initial=initial)
-
-    return render(request, "pedidos/checkout_datos.html", {"form": form})
-
-
-# ---------- Paso 2: seleccionar método de pago ----------
+@require_http_methods(["GET", "POST"])
 def checkout_pago(request):
-    datos_cliente = request.session.get("checkout_datos")
-    if not datos_cliente:
-        messages.error(request, "Completa primero tus datos de entrega.")
+    datos = request.session.get("checkout_pago", {})
+    if not datos:
+        messages.info(request, "Introduce tus datos de envío antes de continuar.")
         return redirect("pedidos:checkout_datos")
 
-    if request.method == "POST":
-        form = MetodoPagoForm(request.POST)
-        if form.is_valid():
-            request.session["checkout_pago"] = {"pago_metodo": form.cleaned_data["pago_metodo"]}
-            request.session.modified = True
+    # Resumen carrito
+    cart = Cart(request)
+    subtotal = Decimal("0.00")
+    for item in cart:
+        price = Decimal(str(item.get("price") or item["product"].precio))
+        qty = int(item.get("qty") or 0)
+        subtotal += (price * qty)
+    subtotal = subtotal.quantize(Decimal("0.01"))
 
-            if form.cleaned_data["pago_metodo"] == "contrareembolso":
-                # Crear pedido y finalizar
-                pedido = crear_pedido_desde_carrito(request, {**datos_cliente, **request.session.get("checkout_pago", {})})
-                # Limpiar
-                for k in ("checkout_datos", "checkout_pago", "shipping_method_id"):
-                    request.session.pop(k, None)
-                return redirect("pedidos:checkout_ok", pedido_id=pedido.id)
-            else:
-                return redirect("pedidos:checkout_tarjeta")
+    metodos = ShippingMethod.objects.filter(activo=True).order_by("orden", "nombre")
+    seleccionado = request.session.get("shipping_method_id")
+
+    ENVIO_GRATIS_DESDE = getattr(settings, "ENVIO_GRATIS_DESDE", Decimal("999999"))
+    envio = Decimal("0.00")
+    metodo_obj = None
+    if seleccionado:
+        metodo_obj = ShippingMethod.objects.filter(pk=seleccionado, activo=True).first()
+    if subtotal < ENVIO_GRATIS_DESDE and metodo_obj:
+        envio = Decimal(metodo_obj.coste or 0).quantize(Decimal("0.01"))
+    total_preview = (subtotal + envio).quantize(Decimal("0.01"))
+
+    if request.method == "GET":
+        return render(
+            request, "pedidos/checkout_pago.html",
+            {
+                "datos": datos,
+                "metodos_envio": metodos,
+                "seleccionado": int(seleccionado) if seleccionado else None,
+                "subtotal": subtotal,
+                "envio": envio,
+                "total_preview": total_preview,
+                "ENVIO_GRATIS_DESDE": ENVIO_GRATIS_DESDE,
+            },
+        )
+
+    # POST -> contrareembolso
+    try:
+        pedido = crear_pedido_desde_carrito(request, {**datos, "pago_metodo": "contrareembolso"})
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect("pedidos:checkout_pago")
+    messages.success(request, "¡Pedido creado correctamente!")
+    return redirect("pedidos:checkout_ok", pedido_id=getattr(pedido, "id", 0))
+
+@require_POST
+def seleccionar_envio(request):
+    method_id = request.POST.get("shipping_method_id")
+    if method_id and ShippingMethod.objects.filter(pk=method_id, activo=True).exists():
+        request.session["shipping_method_id"] = int(method_id)
+        request.session.modified = True
+        messages.success(request, "Método de envío actualizado.")
     else:
-        initial = request.session.get("checkout_pago") or {}
-        form = MetodoPagoForm(initial=initial)
+        messages.error(request, "Método de envío no válido.")
+    return redirect("pedidos:checkout_pago")
 
-    # Aviso si faltan claves de Stripe
-    if not settings.STRIPE_SECRET_KEY or not settings.STRIPE_PUBLIC_KEY:
-        messages.warning(request, "Pago con tarjeta no disponible: falta configuración de Stripe.")
-
-    return render(request, "pedidos/checkout_pago.html", {"form": form})
-
-
-# ---------- Stripe Checkout ----------
+@require_http_methods(["GET", "POST"])
 def checkout_tarjeta(request):
-    datos_cliente = request.session.get("checkout_datos")
-    pago = request.session.get("checkout_pago")
+    datos = request.session.get("checkout_pago", {})
+    if not datos:
+        messages.info(request, "Introduce tus datos de envío antes de continuar.")
+        return redirect("pedidos:checkout_datos")
 
-    if not datos_cliente or not pago or pago.get("pago_metodo") != "tarjeta":
-        messages.error(request, "Selecciona tarjeta en el paso anterior.")
-        return redirect("pedidos:checkout_pago")
-
-    if not settings.STRIPE_SECRET_KEY or not settings.STRIPE_PUBLIC_KEY:
-        messages.error(request, "Stripe no está configurado (claves ausentes).")
-        return redirect("pedidos:checkout_pago")
-
-    # Crea pedido preliminar (sin tocar stock)
-    pedido, totals = crear_pedido_tarjeta_pre(request, {**datos_cliente, **pago})
-
-    stripe.api_key = settings.STRIPE_SECRET_KEY
-
-    # Construir líneas para Stripe en céntimos
-    line_items = []
-    for it in pedido.items.all():
-        unit_amount = int(Decimal(it.precio_unit) * 100)
-        line_items.append({
-            "price_data": {
-                "currency": "eur",
-                "product_data": {"name": it.titulo},
-                "unit_amount": unit_amount,
-            },
-            "quantity": it.cantidad,
-        })
-
-    if pedido.envio_coste and Decimal(pedido.envio_coste) > 0:
-        line_items.append({
-            "price_data": {
-                "currency": "eur",
-                "product_data": {"name": f"Envío ({pedido.envio_metodo.nombre})" if pedido.envio_metodo else "Envío"},
-                "unit_amount": int(Decimal(pedido.envio_coste) * 100),
-            },
-            "quantity": 1,
-        })
-
-    success_url = request.build_absolute_uri(
-        reverse("pedidos:checkout_ok", kwargs={"pedido_id": pedido.id})
-    )
-    cancel_url = request.build_absolute_uri(reverse("pedidos:checkout_pago"))
-
-    session = stripe.checkout.Session.create(
-        mode="payment",
-        payment_method_types=["card"],
-        line_items=line_items,
-        customer_email=pedido.email,
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata={"pedido_id": str(pedido.id)},
-    )
-
-    pedido.pago_ref = session.id
-    pedido.save(update_fields=["pago_ref"])
-
-    return render(
-        request,
-        "pedidos/checkout_tarjeta.html",
-        {"session_id": session.id, "STRIPE_PUBLIC_KEY": settings.STRIPE_PUBLIC_KEY, "pedido": pedido},
-    )
-
-
-# ---------- Webhook de Stripe ----------
-@csrf_exempt
-def stripe_webhook(request):
-    payload = request.body
-    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
-    endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
+    if request.method == "GET":
+        return render(request, "pedidos/checkout_tarjeta.html",
+                      {"datos": datos, "STRIPE_PUBLIC_KEY": settings.STRIPE_PUBLIC_KEY})
 
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
-    except Exception:
-        return HttpResponseBadRequest("Invalid payload or signature")
+        pedido, totales = crear_pedido_tarjeta_pre(request, {**datos})
+    except ValueError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
 
-    if event.get("type") == "checkout.session.completed":
-        session = event["data"]["object"]
-        pedido_id = (session.get("metadata") or {}).get("pedido_id")
-        payment_intent = session.get("payment_intent") or session.get("id")
+    amount_cents = int((totales["total"] * 100).quantize(0))
+    intent = stripe.PaymentIntent.create(
+        amount=amount_cents, currency="eur",
+        metadata={"pedido_id": str(pedido.id), "tracking_token": pedido.tracking_token},
+    )
+    if hasattr(pedido, "pago_ref"):
+        pedido.pago_ref = intent.id
+        pedido.save(update_fields=["pago_ref"])
+    return JsonResponse({"client_secret": intent.client_secret, "pedido_id": pedido.id})
 
-        if pedido_id:
-            try:
-                pedido = Pedido.objects.prefetch_related("items").get(pk=int(pedido_id))
-            except Pedido.DoesNotExist:
-                return HttpResponse(status=200)
-
-            if pedido.pago_estado != "pagado":
-                pedido.pago_estado = "pagado"
-                pedido.pago_ref = payment_intent
-                pedido.save(update_fields=["pago_estado", "pago_ref"])
-
-                # Descontar stock
-                for it in pedido.items.all():
-                    try:
-                        p = Producto.objects.get(pk=it.producto_id)
-                        p.stock = max(0, p.stock - it.cantidad)
-                        p.save(update_fields=["stock"])
-                    except Producto.DoesNotExist:
-                        pass
-    return HttpResponse(status=200)
-
-
-# ---------- Paso 3 OK ----------
-def checkout_ok(request, pedido_id):
-    pedido = get_object_or_404(Pedido, id=pedido_id)
-
-    # Si fue tarjeta y ya está pagado, limpiar carrito/sesión
-    if pedido.pago_metodo == "tarjeta" and pedido.pago_estado == "pagado":
-        try:
-            Cart(request).clear()
-        except Exception:
-            pass
-        for k in ("checkout_datos", "checkout_pago", "shipping_method_id"):
-            request.session.pop(k, None)
-
+def checkout_ok(request, pedido_id: int):
+    from .models import Pedido
+    pedido = get_object_or_404(Pedido.objects.select_related("envio_metodo"), pk=pedido_id)
     return render(request, "pedidos/checkout_ok.html", {"pedido": pedido})
 
-
-# ---------- Seguimiento ----------
-def seguimiento(request, token):
-    pedido = get_object_or_404(Pedido, tracking_token=token)
+def seguimiento(request, token: str):
+    from .models import Pedido
+    pedido = get_object_or_404(
+        Pedido.objects.select_related("envio_metodo").prefetch_related("items"),
+        tracking_token=token,
+    )
     return render(request, "pedidos/seguimiento.html", {"pedido": pedido})
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def stripe_webhook(request):
+    payload = request.body
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
+    endpoint_secret = getattr(settings, "STRIPE_WEBHOOK_SECRET", "")
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+    except Exception as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    if event["type"] == "payment_intent.succeeded":
+        pi = event["data"]["object"]
+        pedido_id = (pi.get("metadata") or {}).get("pedido_id")
+        from .models import Pedido
+        pedido = Pedido.objects.filter(pk=pedido_id).first() or Pedido.objects.filter(pago_ref=pi.get("id")).first()
+        if pedido:
+            confirmar_pedido_tarjeta_exitoso(pedido)
+    return JsonResponse({"status": "ok"})

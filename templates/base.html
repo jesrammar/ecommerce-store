@@ -33,9 +33,12 @@
         </li>
       </ul>
 
-      <form class="d-flex me-3" role="search" action="{% url 'productos:buscar' %}" method="get">
-        <input class="form-control me-2" type="search" name="q" placeholder="Buscar productos…" aria-label="Buscar" value="{{ request.GET.q }}">
-        <button class="btn btn-outline-light" type="submit">Buscar</button>
+      <form class="d-flex me-3" role="search"
+      action="{% url 'productos:catalogo' %}" method="get">
+      <input class="form-control me-2" type="search" name="q"
+         placeholder="Buscar productos…" aria-label="Buscar"
+         value="{{ request.GET.q }}">
+      <button class="btn btn-outline-light" type="submit">Buscar</button>
       </form>
 
       <ul class="navbar-nav mb-2 mb-lg-0">
@@ -57,15 +60,15 @@
 </nav>
 
 {% if messages %}
-  <div class="container mt-3">
+  <div class="messages">
     {% for message in messages %}
-      <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+      <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
         {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
       </div>
     {% endfor %}
   </div>
 {% endif %}
+
 
 <main class="container my-4">
   {% block content %}{% endblock %}
