@@ -7,12 +7,24 @@
 <h1 class="h3 mb-3">Carrito</h1>
 
 {% if cart.count %}
+  
+  {# Aviso si alguna línea excede el stock #}
+  {% if stock_errores %}
+    <div class="alert alert-danger">
+      <strong>Revisa tu carrito:</strong><br>
+      {% for e in stock_errores %}
+        • Sin stock suficiente para <strong>{{ e.product.nombre }}</strong>.
+        Disponible: <strong>{{ e.disponible }}</strong>. Tenías: {{ e.qty }}.<br>
+      {% endfor %}
+    </div>
+  {% endif %}
+
   <div class="table-responsive">
     <table class="table align-middle">
       <thead>
         <tr>
           <th>Producto</th>
-          <th style="width:180px;">Cantidad</th>
+          <th style="width:220px;">Cantidad</th>
           <th class="text-end">Precio</th>
           <th class="text-end">Subtotal</th>
           <th></th>
@@ -24,11 +36,8 @@
           <tr>
             <td>
               <div class="d-flex align-items-center gap-3">
-                {# Si tu iterador no trae imagen, mostramos un placeholder #}
                 <img src="{% static 'img/placeholder.png' %}" alt="" width="60" class="rounded">
-
                 <div>
-                  {# Enlace al detalle si tenemos slug #}
                   {% if item.slug %}
                     <div class="fw-semibold">
                       <a href="{% url 'productos:producto_detalle' slug=item.slug %}" class="link-body-emphasis">
@@ -39,7 +48,6 @@
                     <div class="fw-semibold">{{ item.name }}</div>
                   {% endif %}
 
-                  {# Meta/opciones de personalización #}
                   {% if item.meta %}
                     <div class="small text-muted mt-1">
                       {% if item.meta.talla %}Talla: {{ item.meta.talla }}{% endif %}
@@ -58,21 +66,32 @@
 
             <td>
               <form action="{% url 'carrito:carrito_update' item.product_id %}"
-                    method="post" class="d-flex gap-2">
+                    method="post" class="d-flex gap-2 align-items-center">
                 {% csrf_token %}
                 <input type="number" name="qty"
                        class="form-control form-control-sm"
-                       value="{{ item.qty }}" min="0">
+                       value="{{ item.qty }}" min="0"
+                       max="{{ item.product.stock|default:0 }}">
                 <button class="btn btn-sm btn-outline-primary">Actualizar</button>
               </form>
+
+              {# Mensaje inline si justo esta línea va pasada de stock #}
+              {% if item.product and item.qty > item.product.stock %}
+                <div class="small text-danger mt-1">
+                  Solo hay {{ item.product.stock }} uds disponibles.
+                </div>
+              {% endif %}
             </td>
 
             <td class="text-end">{{ item.price }} €</td>
             <td class="text-end">{{ item.subtotal }} €</td>
 
             <td class="text-end">
-              <a href="{% url 'carrito:carrito_remove' item.product_id %}"
-                 class="btn btn-sm btn-outline-danger">Quitar</a>
+              {# Mejor práctica: quitar por POST (no GET) #}
+              <form action="{% url 'carrito:carrito_remove' item.product_id %}" method="post" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger">Quitar</button>
+              </form>
             </td>
           </tr>
         {% endfor %}
@@ -90,8 +109,15 @@
 
   <div class="d-flex gap-2 justify-content-end">
     <a href="{% url 'productos:catalogo' %}" class="btn btn-outline-secondary">Seguir comprando</a>
-    <a href="{% url 'pedidos:checkout_datos' %}" class="btn btn-success">Finalizar compra</a>
+
+    {# Si hay errores de stock, desactivamos el botón #}
+    <a href="{% url 'pedidos:checkout_datos' %}"
+       class="btn btn-success {% if stock_errores %}disabled{% endif %}"
+       {% if stock_errores %}aria-disabled="true"{% endif %}>
+      Finalizar compra
+    </a>
   </div>
+
 {% else %}
   <div class="alert alert-info">Tu carrito está vacío.</div>
   <a href="{% url 'productos:catalogo' %}" class="btn btn-primary">Ver catálogo</a>

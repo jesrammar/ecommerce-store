@@ -90,3 +90,86 @@ class Cart:
     @property
     def total(self):
         return sum(Decimal(str(i["price"])) * int(i["qty"]) for i in self.cart.values())
+
+
+
+    def get_quantity(self, product_id: int) -> int:
+        """Cantidad actual de un producto en el carrito."""
+        return int(self.cart.get(str(product_id), {}).get("qty", 0))
+
+
+    def set(self, product, quantity: int, meta_json=None):
+        """
+        Fija la cantidad exacta de un producto (sirve para 'Actualizar').
+        Usa también para recortar al stock cuando haga falta.
+        """
+        pid = str(getattr(product, "id", product))
+        meta_dict = _to_dict(meta_json)
+        q = int(max(0, quantity))
+
+        if q == 0:
+            if pid in self.cart:
+                del self.cart[pid]
+        else:
+            row = self.cart.get(pid, {})
+            row.update({
+                "qty": q,
+                "price": row.get("price", str(getattr(product, "precio", "0"))),
+                "name": row.get("name", getattr(product, "nombre", "")),
+                "slug": row.get("slug", getattr(product, "slug", "")),
+                "meta": meta_dict or row.get("meta", {}),
+            })
+            self.cart[pid] = row
+
+        self.save()
+
+    # --- NUEVO ---
+    def stock_errors(self):
+        """
+        Devuelve una lista de dicts con líneas que superan el stock:
+        [{ 'product': <Producto>, 'qty': 7, 'disponible': 1 }, ...]
+        """
+        errores = []
+        ids = [int(pid) for pid in self.cart.keys()]
+        productos = {p.id: p for p in Producto.objects.filter(id__in=ids)}
+        for pid, raw in self.cart.items():
+            p = productos.get(int(pid))
+            qty = int(raw.get("qty", 0))
+            disp = int(getattr(p, "stock", 0)) if p else 0
+            if qty > disp:
+                errores.append({"product": p, "qty": qty, "disponible": disp})
+        return errores
+
+
+    def has_stock_errors(self) -> bool:
+        """True si alguna línea del carrito excede el stock."""
+        return bool(self.stock_errors())
+
+    
+    def normalize_to_stock(self) -> int:
+        """
+        Recorta automáticamente cantidades al stock disponible.
+        Devuelve cuántas líneas fueron ajustadas (para mostrar aviso).
+        """
+        ajustadas = 0
+        ids = [int(pid) for pid in self.cart.keys()]
+        productos = {p.id: p for p in Producto.objects.filter(id__in=ids)}
+        for pid, raw in list(self.cart.items()):
+            p = productos.get(int(pid))
+            if not p:
+              
+                del self.cart[pid]
+                ajustadas += 1
+                continue
+            qty = int(raw.get("qty", 0))
+            disp = int(getattr(p, "stock", 0))
+            if disp <= 0:
+                del self.cart[pid]
+                ajustadas += 1
+            elif qty > disp:
+                raw["qty"] = disp
+                self.cart[pid] = raw
+                ajustadas += 1
+        if ajustadas:
+            self.save()
+        return ajustadas
