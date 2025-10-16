@@ -1,36 +1,134 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Entrar{% endblock %}
 
-{% block content %}
-<h1 class="mb-3">Entrar</h1>
+{% block body_class %}auth-bg{% endblock %}
 
-<form method="post" class="card card-body" novalidate>
-  {% csrf_token %}
-  <!-- importante: mantener la redirección -->
-  <input type="hidden" name="next" value="{{ next }}">
+{% block extra_head %}
+<style>
+  /* --- Fondo con logo difuso y degradado elegante --- */
+  .auth-bg{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at center, rgba(0,0,0,.45), rgba(0,0,0,.9) 80%),
+    url("{% static 'img/E-Clothify.png' %}") center/480px no-repeat,
+    linear-gradient(180deg, #141516, #0b0c0d);
+  background-blend-mode: overlay;
+  position: relative;
+  overflow: hidden;
+}
 
-  {% if messages %}
-    {% for m in messages %}
-      <div class="alert alert-{{ m.tags|default:'info' }} mb-3">{{ m }}</div>
-    {% endfor %}
-  {% endif %}
+/* capa para difuminar aún más el logo */
+.auth-bg::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    url("{% static 'img/E-Clothify.png' %}") center/480px no-repeat;
+  opacity:.04;
+  filter: blur(12px);
+  pointer-events:none;
+}
 
-  <div class="mb-3">
-    <label class="form-label" for="id_username">Usuario</label>
-    <input id="id_username" type="text" name="username" class="form-control"
-           required autocomplete="username" autofocus
-           value="{{ request.POST.username }}">
-  </div>
+  /* Contenedor centrado */
+  .auth-wrap{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
 
-  <div class="mb-3">
-    <label class="form-label" for="id_password">Contraseña</label>
-    <input id="id_password" type="password" name="password" class="form-control"
-           required autocomplete="current-password">
-  </div>
+  /* Tarjeta estilo glass */
+  .glass-card{
+    width:100%;
+    max-width:420px;
+    backdrop-filter: blur(10px);
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    color: #f5f6f7;
+  }
 
-  <div class="d-flex gap-2">
-    <button class="btn btn-primary">Entrar</button>
-    <a class="btn btn-link" href="{% url 'accounts:registro' %}">Crear cuenta</a>
-  </div>
-</form>
+  .glass-card .form-control{
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.18);
+    color:#fff;
+  }
+
+  .glass-card .form-control::placeholder{ color:#ddd; }
+  .brand-top{ display:flex; align-items:center; gap:.6rem; margin-bottom:.25rem; }
+  .brand-top img{ height:36px; width:auto; }
+  .brand-top span{ font-weight:700; letter-spacing:.5px; }
+  .muted{ color:#cfd3d8; opacity:.85; }
+  .btn-primary{ background:#ff8a00; border-color:#ff8a00; }
+  .btn-primary:hover{ filter:brightness(0.95); }
+  a.link-light{ color:#fff; opacity:.9; }
+  a.link-light:hover{ opacity:1; }
+</style>
 {% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <form method="post" class="glass-card p-4" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+
+    <div class="brand-top mb-2">
+      <img src="{% static 'img/E-Clothify.png' %}" alt="E-Clothify">
+      <span>E-CLOTHIFY</span>
+    </div>
+
+    <h4 class="mb-1">Bienvenido</h4>
+    <p class="muted mb-4">Accede con tu cuenta o crea una nueva.</p>
+
+    {% for m in messages %}
+      <div class="alert alert-{{ m.tags|default:'info' }} py-2">{{ m }}</div>
+    {% endfor %}
+
+    <div class="mb-3">
+      <label class="form-label" for="id_username">Usuario o email</label>
+      <input id="id_username" type="text" name="username" class="form-control"
+             required autocomplete="username" autofocus
+             placeholder="tu usuario" value="{{ request.POST.username }}">
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label" for="id_password">Contraseña</label>
+      <input id="id_password" type="password" name="password" class="form-control"
+             required autocomplete="current-password" placeholder="••••••••">
+    </div>
+
+    <div class="d-grid mt-3">
+      <button class="btn btn-primary btn-lg">Entrar</button>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <span class="muted small">¿No tienes cuenta?</span>
+      <a class="btn btn-outline-light btn-sm" href="{% url 'accounts:registro' %}">Crear cuenta</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let targetX = 0, targetY = 0;
+let currentX = 0, currentY = 0;
+
+document.addEventListener('mousemove', e => {
+  targetX = (e.clientX / window.innerWidth - 0.5) * 15;
+  targetY = (e.clientY / window.innerHeight - 0.5) * 15;
+});
+
+function animate() {
+  currentX += (targetX - currentX) * 0.05;
+  currentY += (targetY - currentY) * 0.05;
+  document.body.style.backgroundPosition = `calc(50% + ${currentX}px) calc(50% + ${currentY}px)`;
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+{% endblock %}
+

@@ -1,10 +1,118 @@
 {% extends "base.html" %}
-{% block title %}Registro{% endblock %}
+{% load static %}
+{% block title %}Crear cuenta{% endblock %}
+{% block body_class %}auth-bg{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* --- Fondo con logo difuso y degradado elegante --- */
+  .auth-bg{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at center, rgba(0,0,0,.45), rgba(0,0,0,.9) 80%),
+    url("{% static 'img/E-Clothify.png' %}") center/480px no-repeat,
+    linear-gradient(180deg, #141516, #0b0c0d);
+  background-blend-mode: overlay;
+  position: relative;
+  overflow: hidden;
+}
+
+/* capa para difuminar aún más el logo */
+.auth-bg::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    url("{% static 'img/E-Clothify.png' %}") center/480px no-repeat;
+  opacity:.04;
+  filter: blur(12px);
+  pointer-events:none;
+}
+
+  /* Contenedor centrado */
+  .auth-wrap{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+
+  /* Tarjeta estilo glass */
+  .glass-card{
+    width:100%;
+    max-width:480px;
+    backdrop-filter: blur(10px);
+    background: rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:18px;
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+    color:#f5f6f7;
+  }
+
+  .glass-card .form-control{
+    background: rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.18);
+    color:#fff;
+  }
+
+  .glass-card .form-control::placeholder{ color:#ddd; }
+  .brand-top{ display:flex; align-items:center; gap:.6rem; margin-bottom:.25rem; }
+  .brand-top img{ height:36px; width:auto; }
+  .brand-top span{ font-weight:700; letter-spacing:.5px; }
+  .muted{ color:#cfd3d8; opacity:.85; }
+  .btn-primary{ background:#ff8a00; border-color:#ff8a00; }
+  .btn-primary:hover{ filter:brightness(0.95); }
+  a.link-light{ color:#fff; opacity:.9; }
+  a.link-light:hover{ opacity:1; }
+</style>
+{% endblock %}
+
 {% block content %}
-<h1 class="mb-3">Crear cuenta</h1>
-<form method="post" class="card card-body">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button class="btn btn-success">Registrarme</button>
-</form>
+<div class="auth-wrap">
+  <form method="post" class="glass-card p-4" novalidate>
+    {% csrf_token %}
+    <div class="brand-top mb-2">
+      <img src="{% static 'img/E-Clothify.png' %}" alt="E-Clothify">
+      <span>E-CLOTHIFY</span>
+    </div>
+    <h4 class="mb-1">Crear cuenta</h4>
+    <p class="muted mb-3">Rellena tus datos para empezar.</p>
+
+    {% for m in messages %}
+      <div class="alert alert-{{ m.tags|default:'info' }} py-2">{{ m }}</div>
+    {% endfor %}
+
+    {{ form.as_p }}
+
+    <div class="d-grid mt-3">
+      <button class="btn btn-primary btn-lg">Registrarme</button>
+    </div>
+
+    <div class="text-end mt-3">
+      <a class="link-light" href="{% url 'accounts:login' %}">Ya tengo cuenta</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let targetX = 0, targetY = 0;
+let currentX = 0, currentY = 0;
+
+document.addEventListener('mousemove', e => {
+  targetX = (e.clientX / window.innerWidth - 0.5) * 15;
+  targetY = (e.clientY / window.innerHeight - 0.5) * 15;
+});
+
+function animate() {
+  currentX += (targetX - currentX) * 0.05;
+  currentY += (targetY - currentY) * 0.05;
+  document.body.style.backgroundPosition = `calc(50% + ${currentX}px) calc(50% + ${currentY}px)`;
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+
 {% endblock %}
