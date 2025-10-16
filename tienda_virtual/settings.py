@@ -38,14 +38,14 @@ TEMPLATES = [{
     'DIRS':[BASE_DIR/'templates'],
     'APP_DIRS':True,
     'OPTIONS':{
-        'context_processors':[
-            'django.template.context_processors.debug',
-            'django.template.context_processors.request',
-            'django.contrib.auth.context_processors.auth',
-            'django.contrib.messages.context_processors.messages',
-            'carrito.context_processors.cart_context',
-            'tienda_virtual.context_processors.globals',
-        ],
+        'context_processors': [
+    'django.template.context_processors.debug',
+    'django.template.context_processors.request',
+    'django.contrib.auth.context_processors.auth',
+    'django.contrib.messages.context_processors.messages',
+    'tienda_virtual.context_processors.globals',
+    'carrito.context_processors.cart_summary',  
+]
     },
 }]
 

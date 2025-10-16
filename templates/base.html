@@ -1,13 +1,13 @@
 {% load static %}
 <!doctype html>
 <html lang="es">
-<head>
+<head>  
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Tienda Virtual{% endblock %}</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  {# <link rel="stylesheet" href="{% static 'css/app.css' %}"> #}
+
 
   {% block extra_head %}{% endblock %}
 </head>
@@ -15,7 +15,7 @@
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
-    {# Si no tienes la URL 'home', usa productos:catalogo o '/' #}
+
     <a class="navbar-brand fw-semibold" href="{% url 'productos:catalogo' %}">Tienda</a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Menú">
@@ -49,11 +49,20 @@
           <li class="nav-item"><a class="nav-link" href="{% url 'accounts:login' %}">Entrar</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'accounts:registro' %}">Crear cuenta</a></li>
         {% endif %}
-        <li class="nav-item">
-          <a href="{% url 'carrito:carrito_ver' %}" class="nav-link">
-            Carrito ({{ cart_count|default:0 }} · {{ cart_total|default:"0.00" }} {{ MONEDA|default:"€" }})
-          </a>
-        </li>
+        <li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle d-flex align-items-center gap-1"
+     href="#" id="miniCartDropdown" role="button"
+     data-bs-toggle="dropdown" aria-expanded="false">
+     <span>🛒</span>
+     <span class="badge text-bg-light">{{ cart_count|default:"0" }}</span>
+     <span class="d-none d-sm-inline">{{ cart_total|floatformat:2 }} {{ MONEDA|default:"€" }}</span>
+  </a>
+  <div class="dropdown-menu dropdown-menu-end p-3"
+       aria-labelledby="miniCartDropdown" style="min-width:22rem;">
+    {% include "carrito/_mini_cart.html" %}
+  </div>
+</li>
+
       </ul>
     </div>
   </div>

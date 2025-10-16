@@ -1,11 +1,18 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
+from django.conf import settings
+from django.shortcuts import get_object_or_404, redirect, render, resolve_url
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from .forms import RegistroForm, PerfilForm, AddressForm
 from .models import Address
+
+def _safe_next(request):
+    nxt = request.POST.get("next") or request.GET.get("next")
+    if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}):
+        return nxt
+    return None
 
 def registro(request):
     if request.method == "POST":
@@ -15,6 +22,8 @@ def registro(request):
             user.set_password(form.cleaned_data["password"])
             user.save()
             messages.success(request, "Registro completado. Ya puedes iniciar sesión.")
+            # Si prefieres que entre automáticamente tras registrarse:
+            # login(request, user); return redirect(resolve_url(settings.LOGIN_REDIRECT_URL))
             return redirect("accounts:login")
     else:
         form = RegistroForm()
@@ -22,21 +31,20 @@ def registro(request):
 
 def login_view(request):
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "")
         user = authenticate(request, username=username, password=password)
         if user:
             login(request, user)
             messages.success(request, "Has iniciado sesión.")
-            next_url = request.GET.get("next") or reverse("home")
-            return redirect(next_url)
+            return redirect(_safe_next(request) or resolve_url(settings.LOGIN_REDIRECT_URL))
         messages.error(request, "Credenciales inválidas.")
-    return render(request, "accounts/login.html")
+    return render(request, "accounts/login.html", {"next": _safe_next(request)})
 
 def logout_view(request):
     logout(request)
     messages.info(request, "Has cerrado sesión.")
-    return redirect("home")
+    return redirect(resolve_url(settings.LOGOUT_REDIRECT_URL))
 
 @login_required
 def perfil(request):

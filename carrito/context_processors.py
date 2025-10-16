@@ -1,17 +1,24 @@
-from decimal import Decimal, ROUND_HALF_UP
+# carrito/context_processors.py
+from decimal import Decimal
+from django.conf import settings
 
-def cart_context(request):
-    cart = request.session.get("carrito", {}) or {}
-    total = Decimal("0")
-    unidades = 0
+def cart_summary(request):
+    """
+    Expone en todas las plantillas:
+      - cart_count: nº de ítems (sumando cantidades)
+      - cart_total: total del carrito
+      - MONEDA: símbolo/abreviatura
+    """
+    cart = request.session.get("cart", {})
+    count = 0
+    total = Decimal("0.00")
     for item in cart.values():
-        precio = Decimal(str(item.get("precio", "0")))
-        cantidad = int(item.get("cantidad", 0))
-        total += precio * cantidad
-        unidades += cantidad
-    total = total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        qty = int(item.get("qty", 0))
+        price = Decimal(str(item.get("price", "0")))
+        count += qty
+        total += price * qty
     return {
-        "carrito_unidades": unidades,
-        "carrito_total": total,
-        "carrito_vacio": unidades == 0,
+        "cart_count": count,
+        "cart_total": total,
+        "MONEDA": getattr(settings, "MONEDA", "€"),
     }

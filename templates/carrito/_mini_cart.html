@@ -1,0 +1,13 @@
+<div class="mini-cart">
+  {% if cart_count %}
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <strong>{{ cart_count }} artículo{{ cart_count|pluralize:"s" }}</strong>
+      <span>Total: <b>{{ cart_total|floatformat:2 }} {{ MONEDA }}</b></span>
+    </div>
+    <a href="{% url 'carrito:carrito_ver' %}" class="btn btn-sm btn-primary w-100">
+      Ver carrito
+    </a>
+  {% else %}
+    <div class="text-muted small">Tu carrito está vacío</div>
+  {% endif %}
+</div>
