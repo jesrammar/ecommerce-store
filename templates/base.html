@@ -19,12 +19,12 @@
     /* Estilo del texto de marca */
     .brand-text{
       font-family:"Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      font-weight:800;           /* más presencia */
-      letter-spacing:.06em;      /* aire entre letras */
+      font-weight:800;
+      letter-spacing:.06em;
       text-transform:uppercase;
       color:var(--brand-text);
-      line-height:1;             /* alinea mejor con el icono */
-      position:relative; top:1px;/* microajuste vertical */
+      line-height:1;
+      position:relative; top:1px;
     }
     .navbar-brand img{ margin-right:.5rem; }
     @media (max-width:420px){
@@ -50,52 +50,56 @@
 
     <div class="collapse navbar-collapse" id="mainNav">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link" href="{% url 'productos:catalogo' %}">Catálogo</a></li>
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'pedidos:seguimiento' token='demo' %}"
-             onclick="event.preventDefault();document.getElementById('seguimientoModalBtn').click();">
-            Seguimiento
-          </a>
-        </li>
+        {% if user.is_authenticated %}
+          <li class="nav-item"><a class="nav-link" href="{% url 'productos:catalogo' %}">Catálogo</a></li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#seguimientoModal">
+              Seguimiento
+            </a>
+          </li>
+        {% endif %}
       </ul>
 
-      <form class="d-flex me-3" role="search" action="{% url 'productos:catalogo' %}" method="get">
-        <input class="form-control me-2" type="search" name="q"
-               placeholder="Buscar productos…" aria-label="Buscar"
-               value="{{ request.GET.q }}">
-        <button class="btn btn-outline-light" type="submit">Buscar</button>
-      </form>
+      {% if user.is_authenticated %}
+        <form class="d-flex me-3" role="search" action="{% url 'productos:catalogo' %}" method="get">
+          <input class="form-control me-2" type="search" name="q"
+                 placeholder="Buscar productos…" aria-label="Buscar"
+                 value="{{ request.GET.q }}">
+          <button class="btn btn-outline-light" type="submit">Buscar</button>
+        </form>
+      {% endif %}
 
       <ul class="navbar-nav mb-2 mb-lg-0">
         {% if user.is_authenticated %}
-          <li class="nav-item"><a class="nav-link" href="{% url 'accounts:perfil' %}">Hola, {{ user.first_name|default:user.username }}</a></li>
-          <li class="nav-item"><a class="nav-link" href="{% url 'accounts:logout' %}">Salir</a></li>
-        {% else %}
-          <li class="nav-item"><a class="nav-link" href="{% url 'accounts:login' %}">Entrar</a></li>
-          <li class="nav-item"><a class="nav-link" href="{% url 'accounts:registro' %}">Crear cuenta</a></li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'accounts:perfil' %}">Hola, {{ user.first_name|default:user.username }}</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-warning" href="{% url 'accounts:logout' %}">Cerrar sesión</a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle d-flex align-items-center gap-1"
+               href="#" id="miniCartDropdown" role="button"
+               data-bs-toggle="dropdown" aria-expanded="false">
+              <span>🛒</span>
+              <span class="badge text-bg-light">{{ cart_count|default:"0" }}</span>
+              <span class="d-none d-sm-inline">{{ cart_total|floatformat:2 }} {{ MONEDA|default:"€" }}</span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end p-3"
+                 aria-labelledby="miniCartDropdown" style="min-width:22rem;">
+              {% include "carrito/_mini_cart.html" %}
+            </div>
+          </li>
         {% endif %}
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle d-flex align-items-center gap-1"
-             href="#" id="miniCartDropdown" role="button"
-             data-bs-toggle="dropdown" aria-expanded="false">
-            <span>🛒</span>
-            <span class="badge text-bg-light">{{ cart_count|default:"0" }}</span>
-            <span class="d-none d-sm-inline">{{ cart_total|floatformat:2 }} {{ MONEDA|default:"€" }}</span>
-          </a>
-          <div class="dropdown-menu dropdown-menu-end p-3"
-               aria-labelledby="miniCartDropdown" style="min-width:22rem;">
-            {% include "carrito/_mini_cart.html" %}
-          </div>
-        </li>
       </ul>
     </div>
   </div>
 </nav>
 
 {% if messages %}
-  <div class="messages">
+  <div class="container mt-3">
     {% for message in messages %}
-      <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+      <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} mb-2">
         {{ message }}
       </div>
     {% endfor %}
@@ -115,7 +119,7 @@
   </div>
 </footer>
 
-<button id="seguimientoModalBtn" type="button" class="d-none" data-bs-toggle="modal" data-bs-target="#seguimientoModal"></button>
+<!-- Modal Seguimiento -->
 <div class="modal fade" id="seguimientoModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <form class="modal-content" onsubmit="return false;">

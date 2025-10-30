@@ -93,9 +93,7 @@
     <h4 class="mb-1">Bienvenido</h4>
     <p class="muted mb-4">Accede con tu cuenta o crea una nueva.</p>
 
-    {% for m in messages %}
-      <div class="alert alert-{{ m.tags|default:'info' }} py-2">{{ m }}</div>
-    {% endfor %}
+    
 
     <div class="mb-3">
       <label class="form-label" for="id_username">Usuario o email</label>
