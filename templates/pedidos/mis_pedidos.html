@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Mis pedidos{% endblock %}
+{% block content %}
+<h1 class="mb-3">Mis pedidos</h1>
+
+{% if pedidos %}
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Fecha</th>
+          <th>Estado</th>
+          <th>Total</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pedidos %}
+          <tr>
+            <td>{{ p.id }}</td>
+            <td>{{ p.fecha_creacion|date:"d/m/Y H:i" }}</td>
+            <td>{{ p.estado|capfirst }}</td>
+            <td>{{ p.total }} {{ MONEDA|default:"€" }}</td>
+            <td><a class="btn btn-sm btn-outline-primary" href="{% url 'pedidos:pedido_detalle_usuario' p.pk %}">Ver</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="alert alert-info">Aún no tienes pedidos.</div>
+{% endif %}
+{% endblock %}

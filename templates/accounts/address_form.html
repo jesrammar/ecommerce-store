@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Nueva dirección{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">{{ form.instance.pk|yesno:"Editar dirección,Nueva dirección" }}</h1>
+
+<form method="post" class="card p-3">
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  {{ form.as_p }}
+
+  <div class="d-flex gap-2 mt-3">
+    <button class="btn btn-primary">Guardar</button>
+    <a class="btn btn-outline-secondary" href="{% url 'accounts:perfil' %}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

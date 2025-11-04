@@ -7,6 +7,9 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, render
+from .models import Pedido
 
 from carrito.cart import Cart
 from .models import ShippingMethod
@@ -145,3 +148,24 @@ def stripe_webhook(request):
         if pedido:
             confirmar_pedido_tarjeta_exitoso(pedido)
     return JsonResponse({"status": "ok"})
+
+
+@login_required
+def mis_pedidos(request):
+    # Usamos el email del usuario logeado para encontrar sus pedidos
+    user_email = request.user.email
+
+    pedidos_qs = Pedido.objects.all()
+    if user_email:
+        pedidos_qs = pedidos_qs.filter(email__iexact=user_email)
+
+    pedidos = pedidos_qs.order_by('-created_at')
+
+    return render(request, "pedidos/mis_pedidos.html", {
+        "pedidos": pedidos,
+    })
+
+@login_required
+def pedido_detalle_usuario(request, pk):
+    pedido = get_object_or_404(Pedido, pk=pk, cliente=request.user)
+    return render(request, "pedidos/pedido_detalle_usuario.html", {"pedido": pedido})
