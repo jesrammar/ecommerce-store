@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Eliminar dirección{% endblock %}
+
+{% block content %}
+<h1>Eliminar dirección</h1>
+<p>¿Seguro que quieres eliminar esta dirección?</p>
+
+<div class="card p-3 mb-3">
+  <strong>{{ addr.nombre }}</strong><br>
+  {{ addr.direccion }}<br>
+  {{ addr.cp }} {{ addr.ciudad }}{% if addr.provincia %}, {{ addr.provincia }}{% endif %}<br>
+  {{ addr.pais }}
+</div>
+
+<form method="post" class="d-flex gap-2">
+  {% csrf_token %}
+  <button class="btn btn-danger">Sí, eliminar</button>
+  <a class="btn btn-outline-secondary" href="{% url 'accounts:perfil' %}">Cancelar</a>
+</form>
+{% endblock %}

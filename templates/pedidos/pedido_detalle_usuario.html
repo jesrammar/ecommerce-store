@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Pedido #{{ pedido.id }}{% endblock %}
+{% block content %}
+<h1>Pedido #{{ pedido.id }}</h1>
+
+<p class="text-muted mb-2">
+  Fecha: {{ pedido.fecha_creacion|date:"d/m/Y H:i" }} ·
+  Estado: <strong>{{ pedido.estado|capfirst }}</strong>
+</p>
+
+<div class="card p-3 mb-3">
+  <h5 class="mb-3">Artículos</h5>
+  <ul class="list-group">
+    {% for item in pedido.itempedido_set.all %}
+      <li class="list-group-item d-flex justify-content-between">
+        <span>{{ item.producto }} × {{ item.cantidad }}</span>
+        <span>{{ item.total }} {{ MONEDA|default:"€" }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="card p-3">
+  <h5 class="mb-2">Totales</h5>
+  <div>Subtotal: {{ pedido.subtotal }} {{ MONEDA|default:"€" }}</div>
+  <div>Impuestos: {{ pedido.impuestos }} {{ MONEDA|default:"€" }}</div>
+  <div>Envío: {{ pedido.coste_entrega }} {{ MONEDA|default:"€" }}</div>
+  <div class="fw-bold">Total: {{ pedido.total }} {{ MONEDA|default:"€" }}</div>
+</div>
+{% endblock %}

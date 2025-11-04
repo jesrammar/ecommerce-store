@@ -1,12 +1,11 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Entrar{% endblock %}
-
 {% block body_class %}auth-bg{% endblock %}
 
 {% block extra_head %}
 <style>
-  /* --- Fondo con logo difuso y degradado --- */
+  /* === MISMO FONDO Y TARJETA QUE REGISTRO === */
   .auth-bg{
     min-height:100vh;
     background:
@@ -18,7 +17,10 @@
     overflow: hidden;
   }
 
-  /* capa para difuminar aún más el logo */
+  .navbar .nav-link[data-bs-target="#seguimientoModal"] {
+  display: none !important;
+}
+
   .auth-bg::before{
     content:"";
     position:fixed;
@@ -30,7 +32,6 @@
     pointer-events:none;
   }
 
-  /* Contenedor centrado */
   .auth-wrap{
     min-height:100vh;
     display:flex;
@@ -39,90 +40,110 @@
     padding:24px;
   }
 
-  /* Tarjeta estilo glass */
   .glass-card{
     width:100%;
-    max-width:420px;
+    max-width:480px;
     backdrop-filter: blur(10px);
-    background: rgba(255,255,255,.08);
-    border: 1px solid rgba(255,255,255,.15);
-    border-radius: 18px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.35);
-    color: #f5f6f7;
+    background: radial-gradient(circle at top, rgba(255,255,255,.06), rgba(0,0,0,.92) 60%);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:24px;
+    box-shadow:0 18px 45px rgba(0,0,0,.7);
+    color:#f5f6f7;
   }
 
   .glass-card .form-control{
-    background: rgba(255,255,255,.12);
-    border: 1px solid rgba(255,255,255,.18);
+    background: rgba(0,0,0,.45);
+    border:1px solid rgba(255,255,255,.2);
     color:#fff;
+    border-radius:999px;
+    height:42px;
+    font-size:.95rem;
   }
-  .glass-card .form-control::placeholder{ color:#ddd; }
+  .glass-card .form-control::placeholder{ color:#d0d0d0; }
 
   .glass-card .form-control:focus{
-    box-shadow: 0 0 0 .2rem rgba(255,138,0,.25);
-    border-color: rgba(255,138,0,.75);
-    background: rgba(255,255,255,.14);
-    color:#fff;
+    box-shadow: 0 0 0 .18rem rgba(255,152,0,.35);
+    border-color:#ff9800;
+    background: rgba(0,0,0,.65);
   }
 
   .brand-top{ display:flex; align-items:center; gap:.6rem; margin-bottom:.25rem; }
   .brand-top img{ height:36px; width:auto; }
-
-  /* Usa la tipografía de marca definida en base.html */
   .brand-top .brand-text{ line-height:1; position:relative; top:1px; }
 
-  .muted{ color:#cfd3d8; opacity:.85; }
-  .btn-primary{ background:#ff8a00; border-color:#ff8a00; }
-  .btn-primary:hover{ filter:brightness(0.95); }
+  .muted{ color:#cfd3d8; opacity:.85; font-size:.9rem; }
+
+  .btn-auth-primary{
+    background:#ff9800;
+    border:none;
+    border-radius:999px;
+    font-weight:600;
+  }
+  .btn-auth-primary:hover{ filter:brightness(.96); }
+
   a.link-light{ color:#fff; opacity:.9; }
   a.link-light:hover{ opacity:1; }
+
+  .small-error{ font-size:.8rem; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="auth-wrap">
-  <form method="post" class="glass-card p-4" novalidate>
-    {% csrf_token %}
-    <input type="hidden" name="next" value="{{ next }}">
+  <div class="glass-card p-4 p-md-5">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
 
-    <div class="brand-top mb-2">
-      <img src="{% static 'img/E-Clothify.png' %}" alt="E-Clothify">
-      <span class="brand-text">E-CLOTHIFY</span>
-    </div>
+      <div class="brand-top mb-3">
+        <img src="{% static 'img/E-Clothify.png' %}" alt="E-Clothify">
+        <span class="brand-text fw-bold text-uppercase" style="letter-spacing:.08em;">
+          E-Clothify
+        </span>
+      </div>
 
-    <h4 class="mb-1">Bienvenido</h4>
-    <p class="muted mb-4">Accede con tu cuenta o crea una nueva.</p>
+      <h2 class="h4 mb-1">Bienvenido</h2>
+      <p class="muted mb-3">Accede con tu cuenta o crea una nueva.</p>
 
-    
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 mb-2">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
 
-    <div class="mb-3">
-      <label class="form-label" for="id_username">Usuario o email</label>
-      <input id="id_username" type="text" name="username" class="form-control"
-             required autocomplete="username" autofocus
-             placeholder="tu usuario" value="{{ request.POST.username }}">
-    </div>
+      {% for m in messages %}
+        <div class="alert alert-{{ m.tags|default:'info' }} py-2 mb-2">{{ m }}</div>
+      {% endfor %}
 
-    <div class="mb-2">
-      <label class="form-label" for="id_password">Contraseña</label>
-      <input id="id_password" type="password" name="password" class="form-control"
-             required autocomplete="current-password" placeholder="••••••••">
-    </div>
+      <div class="mb-2">
+        <label class="form-label mb-1" for="id_username">Usuario o email</label>
+        <input id="id_username" type="text" name="username" class="form-control"
+               required autocomplete="username" autofocus
+               placeholder="tu usuario" value="{{ request.POST.username }}">
+      </div>
 
-    <div class="d-grid mt-3">
-      <button class="btn btn-primary btn-lg">Entrar</button>
-    </div>
+      <div class="mb-3">
+        <label class="form-label mb-1" for="id_password">Contraseña</label>
+        <input id="id_password" type="password" name="password" class="form-control"
+               required autocomplete="current-password" placeholder="••••••••">
+      </div>
 
-    <div class="d-flex justify-content-between align-items-center mt-3">
-      <span class="muted small">¿No tienes cuenta?</span>
-      <a class="btn btn-outline-light btn-sm" href="{% url 'accounts:registro' %}">Crear cuenta</a>
-    </div>
-  </form>
+      <button class="btn btn-auth-primary w-100 py-2">Entrar</button>
+
+      <p class="text-center mt-3 mb-0" style="font-size:.9rem;">
+        ¿No tienes cuenta?
+        <a href="{% url 'accounts:registro' %}" class="link-light text-decoration-underline">
+          Crear cuenta
+        </a>
+      </p>
+    </form>
+  </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-  // Parallax suave del fondo solo en la página de login
+  // Parallax suave del fondo
   const bg = document.querySelector('.auth-bg');
   let targetX = 0, targetY = 0;
   let currentX = 0, currentY = 0;
@@ -135,7 +156,10 @@
   function animate() {
     currentX += (targetX - currentX) * 0.05;
     currentY += (targetY - currentY) * 0.05;
-    if (bg) bg.style.backgroundPosition = `calc(50% + ${currentX}px) calc(50% + ${currentY}px)`;
+    if (bg) {
+      bg.style.backgroundPosition =
+        `calc(50% + ${currentX}px) calc(50% + ${currentY}px)`;
+    }
     requestAnimationFrame(animate);
   }
   animate();
