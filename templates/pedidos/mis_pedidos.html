@@ -1,34 +1,55 @@
 {% extends "base.html" %}
-{% block title %}Mis pedidos{% endblock %}
-{% block content %}
-<h1 class="mb-3">Mis pedidos</h1>
 
-{% if pedidos %}
-  <div class="table-responsive">
-    <table class="table align-middle">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Fecha</th>
-          <th>Estado</th>
-          <th>Total</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in pedidos %}
-          <tr>
-            <td>{{ p.id }}</td>
-            <td>{{ p.fecha_creacion|date:"d/m/Y H:i" }}</td>
-            <td>{{ p.estado|capfirst }}</td>
-            <td>{{ p.total }} {{ MONEDA|default:"€" }}</td>
-            <td><a class="btn btn-sm btn-outline-primary" href="{% url 'pedidos:pedido_detalle_usuario' p.pk %}">Ver</a></td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+{% block title %}Mis pedidos{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <h1 class="mb-4">Mis pedidos</h1>
+
+    {% if not pedidos %}
+      <div class="alert alert-info">
+        Aún no tienes pedidos registrados con este correo.
+      </div>
+    {% else %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-dark">
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Total</th>
+              <th scope="col" class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pedido in pedidos %}
+              <tr>
+                <td>#{{ pedido.id }}</td>
+                <td>{{ pedido.created_at|date:"d/m/Y H:i" }}</td>
+                <td>
+                  {% if pedido.pago_estado == "pagado" %}
+                    <span class="badge text-bg-success">Pagado</span>
+                  {% elif pedido.pago_estado == "enviado" %}
+                    <span class="badge text-bg-primary">Enviado</span>
+                  {% else %}
+                    <span class="badge text-bg-secondary">Iniciado</span>
+                  {% endif %}
+                </td>
+                <td>{{ pedido.total }} {{ MONEDA|default:"€" }}</td>
+                <td class="text-end">
+                  <a href="{% url 'pedidos:seguimiento' token=pedido.tracking_token %}"
+                     class="btn btn-sm btn-outline-warning">
+                    Ver detalle
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
   </div>
-{% else %}
-  <div class="alert alert-info">Aún no tienes pedidos.</div>
-{% endif %}
+</div>
 {% endblock %}

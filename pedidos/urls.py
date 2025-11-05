@@ -12,10 +12,13 @@ urlpatterns = [
     # Selección de envío (guarda en sesión)
     path("envio/seleccionar/", views.seleccionar_envio, name="seleccionar_envio"),
 
+    # Seguimiento
     path("seguimiento/<str:token>/", views.seguimiento, name="seguimiento"),
+
+    # Webhook Stripe
     path("webhooks/stripe/", views.stripe_webhook, name="stripe_webhook"),
-    
+
+    # Mis pedidos
     path("mis/", views.mis_pedidos, name="mis_pedidos"),
     path("mis/<int:pk>/", views.pedido_detalle_usuario, name="pedido_detalle_usuario"),
-
 ]
