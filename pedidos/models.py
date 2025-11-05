@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import models
 from django.utils.crypto import get_random_string
 
@@ -21,6 +22,15 @@ class ShippingMethod(models.Model):
 
 
 class Pedido(models.Model):
+    # ⬇️ NUEVO: vínculo opcional con el usuario logueado
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="pedidos",
+    )
+
     email = models.EmailField()
     nombre = models.CharField(max_length=120)
     telefono = models.CharField(max_length=30, blank=True)
@@ -88,3 +98,4 @@ class PedidoItem(models.Model):
 
     def __str__(self) -> str:
         return f"{self.titulo} x{self.cantidad}"
+    
