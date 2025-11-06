@@ -49,50 +49,71 @@
 
     <div class="collapse navbar-collapse" id="mainNav">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        {% if user.is_authenticated %}
-          <li class="nav-item"><a class="nav-link" href="{% url 'productos:catalogo' %}">Catálogo</a></li>
+        {# Catálogo debe estar siempre #}
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'productos:catalogo' %}">Catálogo</a>
+        </li>
 
-          {# Si está logueado, seguimiento -> Mis pedidos #}
+        {# Seguimiento: mis pedidos si está logueado, modal con token si no #}
+        {% if user.is_authenticated %}
           <li class="nav-item">
             <a class="nav-link" href="{% url 'pedidos:mis_pedidos' %}">Seguimiento</a>
           </li>
         {% else %}
-          {# Invitado: deja el botón que abre el modal de token #}
           <li class="nav-item">
-            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#seguimientoModal">Seguimiento</a>
+            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#seguimientoModal">
+              Seguimiento
+            </a>
           </li>
         {% endif %}
       </ul>
 
-      {% if user.is_authenticated %}
-        <form class="d-flex me-3" role="search" action="{% url 'productos:catalogo' %}" method="get">
-          <input class="form-control me-2" type="search" name="q"
-                 placeholder="Buscar productos…" aria-label="Buscar"
-                 value="{{ request.GET.q }}">
-          <button class="btn btn-outline-light" type="submit">Buscar</button>
-        </form>
-      {% endif %}
+      {# Buscador SIEMPRE visible (inv + logueado) #}
+      <form class="d-flex me-3" role="search" action="{% url 'productos:catalogo' %}" method="get">
+        <input class="form-control me-2" type="search" name="q"
+               placeholder="Buscar productos…" aria-label="Buscar"
+               value="{{ request.GET.q }}">
+        <button class="btn btn-outline-light" type="submit">Buscar</button>
+      </form>
 
-      <ul class="navbar-nav mb-2 mb-lg-0">
+      <ul class="navbar-nav mb-2 mb-lg-0 align-items-center">
+        {# Mini-carrito SIEMPRE visible #}
+        <li class="nav-item dropdown me-2">
+          <a class="nav-link dropdown-toggle d-flex align-items-center gap-1"
+             href="#" id="miniCartDropdown" role="button"
+             data-bs-toggle="dropdown" aria-expanded="false">
+            <span>🛒</span>
+            <span class="badge text-bg-light">{{ cart_count|default:"0" }}</span>
+            <span class="d-none d-sm-inline">
+              {{ cart_total|floatformat:2 }} {{ MONEDA|default:"€" }}
+            </span>
+          </a>
+          <div class="dropdown-menu dropdown-menu-end p-3"
+               aria-labelledby="miniCartDropdown" style="min-width:22rem;">
+            {% include "carrito/_mini_cart.html" %}
+          </div>
+        </li>
+
         {% if user.is_authenticated %}
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'accounts:perfil' %}">Hola, {{ user.first_name|default:user.username }}</a>
+            <a class="nav-link" href="{% url 'accounts:perfil' %}">
+              Hola, {{ user.first_name|default:user.username }}
+            </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link text-warning" href="{% url 'accounts:logout' %}">Cerrar sesión</a>
-          </li>
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle d-flex align-items-center gap-1"
-               href="#" id="miniCartDropdown" role="button"
-               data-bs-toggle="dropdown" aria-expanded="false">
-              <span>🛒</span>
-              <span class="badge text-bg-light">{{ cart_count|default:"0" }}</span>
-              <span class="d-none d-sm-inline">{{ cart_total|floatformat:2 }} {{ MONEDA|default:"€" }}</span>
+            <a class="nav-link text-warning" href="{% url 'accounts:logout' %}">
+              Cerrar sesión
             </a>
-            <div class="dropdown-menu dropdown-menu-end p-3"
-                 aria-labelledby="miniCartDropdown" style="min-width:22rem;">
-              {% include "carrito/_mini_cart.html" %}
-            </div>
+          </li>
+        {% else %}
+          <li class="nav-item me-2 text-white-50">
+            <span class="small">Estás comprando como <strong>Invitado</strong></span>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'accounts:login' %}">Entrar</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'accounts:registro' %}">Crear cuenta</a>
           </li>
         {% endif %}
       </ul>
@@ -133,12 +154,21 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
       <div class="modal-body">
-        <p class="text-muted small mb-2">Si tienes un enlace con token puedes usarlo directamente.</p>
-        <div class="input-group">
-          <span class="input-group-text">Token</span>
-          <input type="text" class="form-control" id="tokenSeguimiento" placeholder="Pega aquí tu token">
-        </div>
-      </div>
+  <p class="text-muted small mb-3">
+    Introduce la <strong>clave de seguimiento</strong> que recibiste por correo al completar tu compra.
+    Con esta clave podrás consultar el estado de tu pedido sin necesidad de registrarte.
+  </p>
+  <div class="input-group">
+    <span class="input-group-text">Clave</span>
+    <input type="text" class="form-control" id="tokenSeguimiento" placeholder="Ejemplo: WLhsWM12345...">
+  </div>
+  <p class="text-muted small mt-2">
+    * Esta clave se envía automáticamente a tu correo después de realizar el pedido.
+  </p>
+</div>
+
+</div>
+
       <div class="modal-footer">
         <a class="btn btn-primary" href="#"
            onclick="const t=document.getElementById('tokenSeguimiento').value.trim(); if(t){ window.location.href='{% url 'pedidos:seguimiento' token='__T__' %}'.replace('__T__', encodeURIComponent(t)); }">

@@ -7,11 +7,41 @@ from django.urls import resolve
 
 
 # Nombres completos "namespace:url_name" que serán públicos SIN login
-# Si quieres que el seguimiento de pedidos sea público, añade: "pedidos:seguimiento"
+# OJO: si algún nombre no coincide con tus urls, cámbialo aquí.
 PUBLIC_ROUTE_NAMES = {
+    # --- Auth ---
     "accounts:login",
     "accounts:registro",
-    # "pedidos:seguimiento",
+
+    # --- Catálogo / escaparate ---
+    # listado general
+    "productos:catalogo",
+    # listado filtrado por categoría (ajusta al nombre real si es distinto)
+    "productos:catalogo_por_categoria",
+    # detalle de producto
+    "productos:producto_detalle",
+    # si tienes vista de preview o detalle legacy, déjalas también públicas
+    "productos:producto_preview",
+    "productos:producto_detalle_legacy",
+
+    # --- Carrito ---
+    "carrito:carrito_ver",
+    "carrito:carrito_add",
+    "carrito:carrito_remove",
+    "carrito:carrito_update",
+
+    # --- Checkout (compra rápida sin registro) ---
+    "pedidos:checkout_datos",
+    "pedidos:checkout_pago",
+    "pedidos:checkout_tarjeta",
+    "pedidos:checkout_ok",
+    "pedidos:seleccionar_envio",
+
+    # --- Seguimiento de pedidos para invitados ---
+    "pedidos:seguimiento",
+
+    # --- Webhook de Stripe (lo llama Stripe, no el usuario) ---
+    "pedidos:stripe_webhook",
 }
 
 
@@ -51,8 +81,7 @@ class LoginRequiredMiddleware:
 
         # 4) Redirigir a LOGIN con ?next=<ruta original> (usa resolve_url por si es nombre)
         login_url = resolve_url(getattr(settings, "LOGIN_URL", "accounts:login"))
-        # usar la URL completa que el usuario pidió (incluye querystring original)
-        next_value = request.get_full_path()
+        next_value = request.get_full_path()  # incluye querystring original
         query = {"next": next_value}
         redirect_to = f"{login_url}?{urlencode(query)}"
 

@@ -1,16 +1,49 @@
 <!doctype html>
-<html>
-  <body style="font-family: Arial, sans-serif;">
+<html lang="es">
+  <body style="font-family: Arial, sans-serif; color:#222;">
+
     <h2>Gracias por tu compra, {{ pedido.nombre }}.</h2>
-    <p>Hemos recibido tu pedido <strong>#{{ pedido.id }}</strong>.</p>
-    <h3>Resumen</h3>
+
+    <p>
+      Hemos recibido tu pedido <strong>#{{ pedido.id }}</strong>.
+    </p>
+
+    <h3>Resumen del pedido</h3>
     <ul>
       {% for it in pedido.items.all %}
-        <li>×{{ it.cantidad }} — {{ it.producto.nombre }} ({{ it.talla }}) — € {{ it.total }}</li>
+        <li>
+          ×{{ it.cantidad }} — {{ it.producto.nombre }}
+          {% if it.talla %} ({{ it.talla }}){% endif %}
+          — {{ it.total|floatformat:2 }} €
+        </li>
       {% endfor %}
     </ul>
-    <p><strong>Total:</strong> € {{ pedido.total }}</p>
-    <p><strong>Entrega en:</strong> {{ pedido.direccion }}, {{ pedido.codigo_postal }} {{ pedido.ciudad }}</p>
-    <p>Puedes seguir tu pedido aquí: {{ site_url }}{% url 'seguimiento_token' token=pedido.token_tracking %}</p>
+
+    <p><strong>Total:</strong> {{ pedido.total|floatformat:2 }} €</p>
+
+    <p>
+      <strong>Entrega en:</strong><br>
+      {{ pedido.direccion }}<br>
+      {{ pedido.codigo_postal }} {{ pedido.ciudad }}
+    </p>
+
+    <hr>
+
+    <p>
+      Puedes seguir el estado de tu pedido en el siguiente enlace:
+    </p>
+    <p>
+      <a href="{{ site_url }}{% url 'pedidos:seguimiento' token=pedido.tracking_token %}">
+        Ver seguimiento del pedido
+      </a>
+    </p>
+
+    <p>
+      También puedes usar este token en la opción <strong>“Seguimiento”</strong> de la tienda:
+    </p>
+    <p style="font-size:1.2em; font-weight:bold; letter-spacing:1px;">
+      {{ pedido.tracking_token }}
+    </p>
+
   </body>
 </html>

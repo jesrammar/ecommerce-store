@@ -17,9 +17,10 @@
     overflow: hidden;
   }
 
+  /* Ocultamos el enlace de seguimiento en el login */
   .navbar .nav-link[data-bs-target="#seguimientoModal"] {
-  display: none !important;
-}
+    display: none !important;
+  }
 
   .auth-bg::before{
     content:"";
@@ -81,6 +82,19 @@
   }
   .btn-auth-primary:hover{ filter:brightness(.96); }
 
+  /* Botón para entrar como invitado */
+  .btn-auth-guest{
+    border-radius:999px;
+    font-weight:500;
+    border:1px solid rgba(255,255,255,.4);
+    background: transparent;
+    color:#f5f6f7;
+  }
+  .btn-auth-guest:hover{
+    background: rgba(255,255,255,.08);
+    color:#fff;
+  }
+
   a.link-light{ color:#fff; opacity:.9; }
   a.link-light:hover{ opacity:1; }
 
@@ -103,7 +117,9 @@
       </div>
 
       <h2 class="h4 mb-1">Bienvenido</h2>
-      <p class="muted mb-3">Accede con tu cuenta o crea una nueva.</p>
+      <p class="muted mb-3">
+        Accede con tu cuenta o compra como invitado.
+      </p>
 
       {% if form.non_field_errors %}
         <div class="alert alert-danger py-2 mb-2">
@@ -130,11 +146,24 @@
 
       <button class="btn btn-auth-primary w-100 py-2">Entrar</button>
 
+      {# --- Bloque nuevo: entrar como invitado --- #}
+      <div class="mt-3">
+        <a href="{% url 'productos:catalogo' %}"
+           class="btn btn-auth-guest w-100 py-2">
+          Entrar como invitado
+        </a>
+      </div>
+
       <p class="text-center mt-3 mb-0" style="font-size:.9rem;">
         ¿No tienes cuenta?
         <a href="{% url 'accounts:registro' %}" class="link-light text-decoration-underline">
           Crear cuenta
         </a>
+      </p>
+
+      <p class="text-center mt-2 mb-0 text-muted" style="font-size:.8rem;">
+        Como invitado podrás realizar una compra completa sin registrarte.
+        Si creas una cuenta, podrás guardar tus datos y consultar el historial de pedidos.
       </p>
     </form>
   </div>
