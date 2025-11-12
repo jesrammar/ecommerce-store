@@ -158,3 +158,10 @@ def logout_view(request):
     logout(request)
     messages.info(request, "Has cerrado sesión.")   # ← solo aquí
     return redirect(resolve_url(getattr(settings, "LOGOUT_REDIRECT_URL", "accounts:login")))
+
+
+@login_required
+def after_login(request):
+    if request.user.is_staff:
+        return redirect("gestion:dashboard")
+    return redirect("productos:catalogo")

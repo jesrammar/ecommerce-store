@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Panel de gestión{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Panel de gestión</h1>
+
+<div class="row g-3">
+  <div class="col-md-4"><div class="card"><div class="card-body">
+    <div class="h2 mb-0">{{ productos_total }}</div>
+    <div class="text-muted">Productos</div>
+  </div></div></div>
+
+  <div class="col-md-4"><div class="card"><div class="card-body">
+    <div class="h2 mb-0">{{ pedidos_total }}</div>
+    <div class="text-muted">Pedidos</div>
+  </div></div></div>
+
+  <div class="col-md-4"><div class="card"><div class="card-body">
+    <div class="h2 mb-0">{{ pedidos_pendientes }}</div>
+    <div class="text-muted">Pendientes</div>
+  </div></div></div>
+</div>
+
+<div class="mt-4">
+  <a class="btn btn-primary me-2" href="{% url 'gestion:admin_producto_list' %}">Gestionar productos</a>
+  <a class="btn btn-outline-secondary" href="{% url 'gestion:admin_pedido_list' %}">Ver pedidos</a>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Pedido #{{ pedido.id }}{% endblock %}
+{% block content %}
+<h2>Pedido #{{ pedido.id }}</h2>
+
+<div class="row">
+  <div class="col-md-6">
+    <h5>Datos</h5>
+    <p><strong>Fecha:</strong> {{ pedido.fecha_creacion|date:"d/m/Y H:i" }}</p>
+    <p><strong>Cliente:</strong> {{ pedido.cliente_nombre|default:pedido.cliente }}</p>
+    <p><strong>Email:</strong> {{ pedido.email }}</p>
+    <p><strong>Estado:</strong> <span class="badge text-bg-secondary">{{ pedido.estado }}</span></p>
+    <p><strong>Total:</strong> {{ pedido.total }} {{ MONEDA|default:"€" }}</p>
+    <form method="post" action="{% url 'gestion:admin_pedido_update_estado' pedido.id %}">
+      {% csrf_token %}
+      <div class="input-group" style="max-width:320px">
+        <select class="form-select" name="estado">
+          <option {% if pedido.estado == 'Iniciado' %}selected{% endif %}>Iniciado</option>
+          <option {% if pedido.estado == 'Pagado' %}selected{% endif %}>Pagado</option>
+          <option {% if pedido.estado == 'Preparando' %}selected{% endif %}>Preparando</option>
+          <option {% if pedido.estado == 'Enviado' %}selected{% endif %}>Enviado</option>
+          <option {% if pedido.estado == 'Completado' %}selected{% endif %}>Completado</option>
+        </select>
+        <button class="btn btn-primary">Actualizar</button>
+      </div>
+    </form>
+  </div>
+  <div class="col-md-6">
+    <h5>Artículos</h5>
+    <table class="table table-sm">
+      <thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr></thead>
+      <tbody>
+        {% for it in pedido.items.all %}
+          <tr>
+            <td>{{ it.producto.nombre }}</td>
+            <td>{{ it.cantidad }}</td>
+            <td>{{ it.precio_unitario }}</td>
+            <td>{{ it.total }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

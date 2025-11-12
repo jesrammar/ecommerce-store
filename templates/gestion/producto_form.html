@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ modo|capfirst }} producto{% endblock %}
+{% block content %}
+<h2>{{ modo|capfirst }} producto</h2>
+<form method="post" enctype="multipart/form-data" class="card p-3">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button class="btn btn-primary">Guardar</button>
+  <a class="btn btn-secondary" href="{% url 'gestion:admin_producto_list' %}">Cancelar</a>
+</form>
+{% endblock %}
