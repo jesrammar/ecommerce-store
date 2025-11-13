@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Productos (gestión){% endblock %}
+{% block content %}
+<h2>Productos</h2>
+<p><a class="btn btn-success" href="{% url 'gestion:admin_producto_create' %}">Nuevo producto</a></p>
+
+<table class="table">
+  <thead><tr><th>Imagen</th><th>Nombre</th><th>Categoría</th><th>Marca</th><th>Precio</th><th></th></tr></thead>
+  <tbody>
+  {% for p in productos %}
+    <tr>
+      <td style="width:70px">
+        {% if p.imagen %}<img src="{{ p.imagen.url }}" class="img-fluid" style="max-height:60px">{% endif %}
+      </td>
+      <td>{{ p.nombre }}</td>
+      <td>{{ p.categoria }}</td>
+      <td>{{ p.marca }}</td>
+      <td>{{ p.precio }} {{ MONEDA|default:"€" }}</td>
+      <td>
+        <a href="{% url 'gestion:admin_producto_update' p.id %}" class="btn btn-sm btn-outline-primary">Editar</a>
+        <form method="post" action="{% url 'gestion:admin_producto_delete' p.id %}" class="d-inline">
+          {% csrf_token %}
+          <button class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar?')">Borrar</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Pedidos (gestión){% endblock %}
+{% block content %}
+<h2>Pedidos</h2>
+<table class="table">
+  <thead><tr><th>#</th><th>Fecha</th><th>Cliente</th><th>Estado</th><th>Total</th><th></th></tr></thead>
+  <tbody>
+  {% for p in pedidos %}
+    <tr>
+      <td>#{{ p.id }}</td>
+      <td>{{ p.fecha_creacion|date:"d/m/Y H:i" }}</td>
+      <td>{{ p.cliente_nombre|default:p.cliente }}</td>
+      <td><span class="badge text-bg-secondary">{{ p.estado }}</span></td>
+      <td>{{ p.total }} {{ MONEDA|default:"€" }}</td>
+      <td><a class="btn btn-sm btn-outline-primary" href="{% url 'gestion:admin_pedido_detail' p.id %}">Ver</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
