@@ -1,45 +1,155 @@
 {% extends "base.html" %}
 {% block title %}Pedido #{{ pedido.id }}{% endblock %}
-{% block content %}
-<h2>Pedido #{{ pedido.id }}</h2>
 
-<div class="row">
+{% block content %}
+<h1 class="h3 mb-3">Pedido #{{ pedido.id }}</h1>
+
+<div class="row g-3 mb-3">
   <div class="col-md-6">
-    <h5>Datos</h5>
-    <p><strong>Fecha:</strong> {{ pedido.fecha_creacion|date:"d/m/Y H:i" }}</p>
-    <p><strong>Cliente:</strong> {{ pedido.cliente_nombre|default:pedido.cliente }}</p>
-    <p><strong>Email:</strong> {{ pedido.email }}</p>
-    <p><strong>Estado:</strong> <span class="badge text-bg-secondary">{{ pedido.estado }}</span></p>
-    <p><strong>Total:</strong> {{ pedido.total }} {{ MONEDA|default:"€" }}</p>
+    <div class="card">
+      <div class="card-header">
+        Datos del cliente
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-4">Nombre</dt>
+          <dd class="col-sm-8">{{ pedido.nombre }}</dd>
+
+          <dt class="col-sm-4">Email</dt>
+          <dd class="col-sm-8">{{ pedido.email }}</dd>
+
+          <dt class="col-sm-4">Teléfono</dt>
+          <dd class="col-sm-8">{{ pedido.telefono|default:"-" }}</dd>
+
+          <dt class="col-sm-4">Dirección</dt>
+          <dd class="col-sm-8">
+            {{ pedido.direccion }}<br>
+            {{ pedido.cp }} {{ pedido.ciudad }}
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        Información del pedido
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-4">Fecha</dt>
+          <dd class="col-sm-8">
+            {{ pedido.created_at|date:"d/m/Y H:i" }}
+          </dd>
+
+          <dt class="col-sm-4">Estado</dt>
+          <dd class="col-sm-8">
+            {{ pedido.estado|default:"pendiente" }}
+          </dd>
+
+          <dt class="col-sm-4">Pago</dt>
+          <dd class="col-sm-8">
+            {{ pedido.pago_estado|capfirst }} ({{ pedido.pago_metodo }})<br>
+            Ref: {{ pedido.pago_ref|default:"-" }}
+          </dd>
+
+          <dt class="col-sm-4">Envío</dt>
+          <dd class="col-sm-8">
+            {% if pedido.envio_metodo %}
+              {{ pedido.envio_metodo.nombre }} ({{ pedido.envio_coste }} €)
+            {% else %}
+              -
+            {% endif %}
+          </dd>
+
+          <dt class="col-sm-4">Total</dt>
+          <dd class="col-sm-8">
+            {{ pedido.total }} {{ MONEDA|default:"€" }}
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    Líneas del pedido
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Variante</th>
+            <th class="text-end">Precio unit.</th>
+            <th class="text-end">Cantidad</th>
+            <th class="text-end">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ item.titulo }}</td>
+            <td>
+              {% if item.variante %}
+                {{ item.variante }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td class="text-end">
+              {{ item.precio_unit }} {{ MONEDA|default:"€" }}
+            </td>
+            <td class="text-end">
+              {{ item.cantidad }}
+            </td>
+            <td class="text-end">
+              {{ item.subtotal }} {{ MONEDA|default:"€" }}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center text-muted py-3">
+              Este pedido no tiene líneas asociadas.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    Cambiar estado del pedido
+  </div>
+  <div class="card-body">
     <form method="post" action="{% url 'gestion:admin_pedido_update_estado' pedido.id %}">
       {% csrf_token %}
-      <div class="input-group" style="max-width:320px">
-        <select class="form-select" name="estado">
-          <option {% if pedido.estado == 'Iniciado' %}selected{% endif %}>Iniciado</option>
-          <option {% if pedido.estado == 'Pagado' %}selected{% endif %}>Pagado</option>
-          <option {% if pedido.estado == 'Preparando' %}selected{% endif %}>Preparando</option>
-          <option {% if pedido.estado == 'Enviado' %}selected{% endif %}>Enviado</option>
-          <option {% if pedido.estado == 'Completado' %}selected{% endif %}>Completado</option>
-        </select>
-        <button class="btn btn-primary">Actualizar</button>
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">Estado</label>
+          <select class="form-select" name="estado">
+            {% for op in estados_sugeridos %}
+              <option value="{{ op }}" {% if op == pedido.estado %}selected{% endif %}>
+                {{ op|capfirst }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-8 text-md-start mt-3 mt-md-0">
+          <button class="btn btn-primary" type="submit">Guardar</button>
+          <a href="{% url 'gestion:admin_pedido_list' %}"
+             class="btn btn-outline-secondary ms-2">
+            Volver al listado
+          </a>
+        </div>
       </div>
     </form>
-  </div>
-  <div class="col-md-6">
-    <h5>Artículos</h5>
-    <table class="table table-sm">
-      <thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr></thead>
-      <tbody>
-        {% for it in pedido.items.all %}
-          <tr>
-            <td>{{ it.producto.nombre }}</td>
-            <td>{{ it.cantidad }}</td>
-            <td>{{ it.precio_unitario }}</td>
-            <td>{{ it.total }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
   </div>
 </div>
 {% endblock %}

@@ -22,7 +22,7 @@ class ShippingMethod(models.Model):
 
 
 class Pedido(models.Model):
-    # ⬇️ NUEVO: vínculo opcional con el usuario logueado
+    # vínculo opcional con el usuario logueado
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -50,6 +50,8 @@ class Pedido(models.Model):
     envio_coste = models.DecimalField(
         max_digits=8, decimal_places=2, default=Decimal("0.00")
     )
+    
+    estado = models.CharField(max_length=20, default="pendiente")
 
     tracking_token = models.CharField(max_length=32, unique=True, editable=False)
 
@@ -98,4 +100,3 @@ class PedidoItem(models.Model):
 
     def __str__(self) -> str:
         return f"{self.titulo} x{self.cantidad}"
-    

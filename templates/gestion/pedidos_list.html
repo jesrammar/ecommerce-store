@@ -1,20 +1,57 @@
 {% extends "base.html" %}
-{% block title %}Pedidos (gestión){% endblock %}
+{% block title %}Pedidos{% endblock %}
+
 {% block content %}
-<h2>Pedidos</h2>
-<table class="table">
-  <thead><tr><th>#</th><th>Fecha</th><th>Cliente</th><th>Estado</th><th>Total</th><th></th></tr></thead>
-  <tbody>
-  {% for p in pedidos %}
-    <tr>
-      <td>#{{ p.id }}</td>
-      <td>{{ p.fecha_creacion|date:"d/m/Y H:i" }}</td>
-      <td>{{ p.cliente_nombre|default:p.cliente }}</td>
-      <td><span class="badge text-bg-secondary">{{ p.estado }}</span></td>
-      <td>{{ p.total }} {{ MONEDA|default:"€" }}</td>
-      <td><a class="btn btn-sm btn-outline-primary" href="{% url 'gestion:admin_pedido_detail' p.id %}">Ver</a></td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
+<h1 class="h3 mb-3">Pedidos</h1>
+
+<div class="table-responsive">
+  <table class="table align-middle">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Fecha</th>
+        <th>Cliente</th>
+        <th>Estado</th>
+        <th class="text-end">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in pedidos %}
+      <tr>
+        <td>#{{ p.id }}</td>
+        <td class="text-muted small">
+          {{ p.fecha|default:"-" }}
+        </td>
+        <td>
+          {{ p.cliente|default:"-" }}
+        </td>
+        <td>
+          {{ p.estado|default:"" }}
+        </td>
+        <td class="text-end">
+          <a class="btn btn-sm btn-outline-secondary"
+             href="{% url 'gestion:admin_pedido_detail' p.id %}">
+            Ver
+          </a>
+
+          <form method="post"
+                action="{% url 'gestion:admin_pedido_update_estado' p.id %}"
+                class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="estado" value="aceptado">
+            <input type="hidden" name="next" value="{% url 'gestion:admin_pedido_list' %}">
+            <button class="btn btn-sm btn-success" type="submit">
+              Aceptar
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="text-center text-muted py-4">No hay pedidos.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}
