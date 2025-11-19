@@ -5,17 +5,20 @@
 
 {% block extra_head %}
 <style>
-  /* === MISMO FONDO Y TARJETA QUE REGISTRO === */
+ 
   .auth-bg{
-    min-height:100vh;
-    background:
-      radial-gradient(circle at center, rgba(0,0,0,.45), rgba(0,0,0,.92) 80%),
-      url("{% static 'img/E-Clothify.png' %}") center/480px no-repeat,
-      linear-gradient(180deg, #141516, #0b0c0d);
-    background-blend-mode: overlay;
-    position: relative;
-    overflow: hidden;
-  }
+  min-height:100vh;
+  max-height:100vh;           /* opcional, para que el fondo no crezca infinito */
+  background:
+    radial-gradient(circle at center, rgba(0,0,0,.45), rgba(0,0,0,.92) 80%),
+    url("{% static 'img/E-Clothify.png' %}") center/480px no-repeat,
+    linear-gradient(180deg, #141516, #0b0c0d);
+  background-blend-mode: overlay;
+  position: relative;
+  overflow-y: auto;           /* ✅ permite scroll vertical */
+  overflow-x: hidden;         /* opcional, por si aparece barra horizontal fea */
+}
+
 
   /* Ocultamos el enlace de seguimiento en el login */
   .navbar .nav-link[data-bs-target="#seguimientoModal"] {

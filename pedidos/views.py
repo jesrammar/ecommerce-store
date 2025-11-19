@@ -30,6 +30,55 @@ stripe.api_key = getattr(settings, "STRIPE_SECRET_KEY", "")
 def _enviar_email_confirmacion(pedido: Pedido, request=None) -> None:
     """
     Envía un correo sencillo de confirmación de pedido al cliente.
+    """
+    print(f"[DEBUG] Enviando email de confirmación para pedido {pedido.id} a {pedido.email}")
+
+    seguimiento_url = ""
+    try:
+        if request is not None:
+            seguimiento_url = request.build_absolute_uri(
+                reverse("pedidos:seguimiento", args=[pedido.tracking_token])
+            )
+        else:
+            base = getattr(settings, "SITE_URL", "").rstrip("/")
+            if base:
+                seguimiento_url = f"{base}{reverse('pedidos:seguimiento', args=[pedido.tracking_token])}"
+    except Exception as e:
+        print("[DEBUG] Error construyendo URL de seguimiento:", e)
+        seguimiento_url = ""
+
+    subject = f"Confirmación de pedido #{pedido.id}"
+    lineas = [
+        f"Hola {pedido.nombre},",
+        "",
+        "Gracias por tu compra en E-Clothify.",
+        "",
+        f"Número de pedido: {pedido.id}",
+        f"Importe total: {pedido.total} €",
+        f"Método de pago: {pedido.pago_metodo}",
+        "",
+    ]
+    if seguimiento_url:
+        lineas.append(f"Puedes seguir tu pedido aquí: {seguimiento_url}")
+        lineas.append("")
+
+    lineas.append("Un saludo,")
+    lineas.append("El equipo de E-Clothify")
+
+    message = "\n".join(lineas)
+
+    # 👇 Para depurar mejor, quita el fail_silently
+    send_mail(
+        subject=subject,
+        message=message,
+        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+        recipient_list=[pedido.email],
+        fail_silently=False,  # AHORA, si falla, verás el error en consola
+    )
+
+    print(f"[DEBUG] Email de confirmación enviado para pedido {pedido.id}")
+    """
+    Envía un correo sencillo de confirmación de pedido al cliente.
     No lanza excepción si falla (fail_silently=True).
     """
     try:

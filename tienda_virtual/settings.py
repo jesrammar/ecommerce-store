@@ -7,8 +7,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-key")
-DEBUG = True
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+
+# 👇 AHORA DEBUG SE LEE DEL .env
+DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
+
+ALLOWED_HOSTS = os.environ.get(
+    "DJANGO_ALLOWED_HOSTS",
+    "127.0.0.1,localhost"
+).split(",")
 
 SITE_URL = os.environ.get("SITE_URL", "http://127.0.0.1:8000")
 
@@ -66,7 +72,7 @@ DATABASES = {
 
 # Autenticación
 LOGIN_URL = "accounts:login"
-LOGIN_REDIRECT_URL = "accounts:after_login"   # <- clave para caer al dashboard si eres staff
+LOGIN_REDIRECT_URL = "accounts:after_login"
 LOGOUT_REDIRECT_URL = "accounts:login"
 
 LANGUAGE_CODE = "es-es"
@@ -82,18 +88,23 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Email
-if DEBUG:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-    DEFAULT_FROM_EMAIL = "noreply@example.com"
-else:
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
-    EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
-    EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
-    DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "noreply@example.com")
+# 🚨 MUY IMPORTANTE: NADA DE IF DEBUG AQUÍ
+# Email SIEMPRE por SMTP, cogiendo todo del .env
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.smtp.EmailBackend"
+)
+
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL",
+    EMAIL_HOST_USER or "noreply@example.com"
+)
 
 ENVIO_GRATIS_DESDE = Decimal("50.00")
 MONEDA = "€"

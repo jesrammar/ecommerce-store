@@ -2,12 +2,16 @@
 {% load static %}
 
 {% block title %}Carrito{% endblock %}
+{% block page_title %}Carrito{% endblock %}
+{% block page_subtitle %}Revisa tus productos antes de finalizar la compra.{% endblock %}
 
 {% block content %}
+  
+
 <h1 class="h3 mb-3">Carrito</h1>
 
 {% if cart.count %}
-  
+
   {# Aviso si alguna línea excede el stock #}
   {% if stock_errores %}
     <div class="alert alert-danger">
@@ -33,10 +37,54 @@
 
       <tbody>
         {% for item in cart %}
+          {% with meta=item.meta %}
           <tr>
             <td>
               <div class="d-flex align-items-center gap-3">
-                <img src="{% static 'img/placeholder.png' %}" alt="" width="60" class="rounded">
+
+              {% if meta.personalizacion and meta.personalizacion.preview_url %}
+  <img src="{{ meta.personalizacion.preview_url }}"
+       alt="{{ item.name }}"
+       width="60"
+       class="rounded border">
+{% elif item.product and item.product.imagen %}
+  <img src="{{ item.product.imagen.url }}"
+       alt="{{ item.name }}"
+       width="60"
+       class="rounded border">
+{% else %}
+  {% with nombre=item.product.nombre|default_if_none:""|lower %}
+    {% if 'tirantas' in nombre %}
+      <img src="{% static 'img/tirantas.png' %}"
+           alt="{{ item.name }}"
+           width="60"
+           class="rounded border">
+    {% elif 'sudadera' in nombre %}
+      <img src="{% static 'img/sudadera.png' %}"
+           alt="{{ item.name }}"
+           width="60"
+           class="rounded border">
+    {% elif 'gorra' in nombre %}
+      <img src="{% static 'img/gorrilla.png' %}"
+           alt="{{ item.name }}"
+           width="60"
+           class="rounded border">
+    {% elif 'pantal' in nombre %}
+      <img src="{% static 'img/pantalon-estandar.png' %}"
+           alt="{{ item.name }}"
+           width="60"
+           class="rounded border">
+    {% else %}
+      <img src="{% static 'img/cami.png' %}"
+           alt="{{ item.name }}"
+           width="60"
+           class="rounded border">
+    {% endif %}
+  {% endwith %}
+{% endif %}
+
+
+
                 <div>
                   {% if item.slug %}
                     <div class="fw-semibold">
@@ -48,16 +96,44 @@
                     <div class="fw-semibold">{{ item.name }}</div>
                   {% endif %}
 
-                  {% if item.meta %}
+                  {# Variante (talla / color) #}
+                  {% if meta %}
                     <div class="small text-muted mt-1">
-                      {% if item.meta.talla %}Talla: {{ item.meta.talla }}{% endif %}
-                      {% if item.meta.color %}{% if item.meta.talla %} · {% endif %}Color: {{ item.meta.color }}{% endif %}
+                      {% if meta.talla %}Talla: {{ meta.talla }}{% endif %}
+                      {% if meta.color %}
+                        {% if meta.talla %} · {% endif %}
+                        Color: {{ meta.color }}
+                      {% endif %}
                     </div>
-                    {% if item.meta.personalizacion.preview_url %}
-                      <div>
-                        <img src="{{ item.meta.personalizacion.preview_url }}"
-                             style="max-width:120px" class="border rounded mt-1" alt="Vista previa">
+
+                    {# Info de personalización (texto / color / mini-preview) #}
+                    {% if meta.personalizacion %}
+                      <div class="small text-muted mt-1">
+                        {% if meta.personalizacion.texto %}
+                          <div>Texto: “{{ meta.personalizacion.texto }}”</div>
+                        {% endif %}
+                        {% if meta.personalizacion.color_texto %}
+                          <div>
+                            Color texto: {{ meta.personalizacion.color_texto }}
+                            <span style="display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid #ccc;margin-left:4px;background:{{ meta.personalizacion.color_texto }}"></span>
+                          </div>
+                        {% endif %}
                       </div>
+
+                      {% if not meta.personalizacion.preview_url and item.product and item.product.permite_personalizacion %}
+                        <div class="small text-muted">
+                          (Puedes generar una vista previa en la ficha del producto)
+                        </div>
+                      {% endif %}
+
+                      {% if meta.personalizacion.preview_url %}
+                        <div>
+                          <img src="{{ meta.personalizacion.preview_url }}"
+                               style="max-width:120px"
+                               class="border rounded mt-1"
+                               alt="Vista previa">
+                        </div>
+                      {% endif %}
                     {% endif %}
                   {% endif %}
                 </div>
@@ -83,8 +159,12 @@
               {% endif %}
             </td>
 
-            <td class="text-end">{{ item.price }} €</td>
-            <td class="text-end">{{ item.subtotal }} €</td>
+            <td class="text-end">
+              {{ MONEDA|default:"€" }} {{ item.price|floatformat:2 }}
+            </td>
+            <td class="text-end">
+              {{ MONEDA|default:"€" }} {{ item.subtotal|floatformat:2 }}
+            </td>
 
             <td class="text-end">
               {# Mejor práctica: quitar por POST (no GET) #}
@@ -94,13 +174,16 @@
               </form>
             </td>
           </tr>
+          {% endwith %}
         {% endfor %}
       </tbody>
 
       <tfoot>
         <tr>
           <th colspan="3" class="text-end">Total</th>
-          <th class="text-end">{{ cart.total }} €</th>
+          <th class="text-end">
+            {{ MONEDA|default:"€" }} {{ cart.total|floatformat:2 }}
+          </th>
           <th></th>
         </tr>
       </tfoot>
