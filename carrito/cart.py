@@ -4,6 +4,7 @@ from productos.models import Producto
 
 CART_SESSION_ID = "cart"
 
+
 def _to_dict(value):
     """Convierte JSON string -> dict de forma segura."""
     if isinstance(value, dict) or value is None:
@@ -14,6 +15,7 @@ def _to_dict(value):
         except Exception:
             return {}
     return {}
+
 
 class Cart:
     def __init__(self, request):
@@ -27,28 +29,51 @@ class Cart:
         self.session[CART_SESSION_ID] = self.cart
         self.session.modified = True
 
-    def add(self, product, quantity=1, override=False, meta_json=None):
+    def add(self, product, quantity=1, override=False, meta_json=None, unit_price=None):
+        """
+        Añade o actualiza un producto en el carrito.
+
+        - product: instancia de Producto
+        - quantity: cantidad a añadir
+        - override: si True, se fija la cantidad; si False, se suma
+        - meta_json: JSON con info extra (variante, personalización, etc.)
+        - unit_price: precio unitario final (producto + variante + personalización).
+                      Si no se pasa, se usa product.precio.
+        """
         pid = str(product.id)
         meta_dict = _to_dict(meta_json)
 
-        if pid not in self.cart:
-            self.cart[pid] = {
+        # Recuperar o crear la fila
+        row = self.cart.get(pid)
+        if row is None:
+            base_price = unit_price if unit_price is not None else getattr(product, "precio", 0)
+            row = {
                 "qty": 0,
-                "price": str(product.precio),
+                "price": str(base_price),
                 "meta": meta_dict,
                 "name": product.nombre,
                 "slug": product.slug,
             }
 
+        # Actualizar cantidad
         if override:
-            self.cart[pid]["qty"] = int(quantity)
+            row["qty"] = int(quantity)
         else:
-            self.cart[pid]["qty"] += int(quantity)
+            row["qty"] = int(row.get("qty", 0)) + int(quantity)
 
-        # por si actualizas personalización/variantes
+        # Actualizar meta si nos llega nueva
         if meta_json is not None:
-            self.cart[pid]["meta"] = meta_dict
+            row["meta"] = meta_dict
 
+        # Actualizar precio solo si nos pasan uno calculado
+        if unit_price is not None:
+            row["price"] = str(unit_price)
+
+        # Aseguramos que siempre haya un precio coherente
+        if "price" not in row:
+            row["price"] = str(getattr(product, "precio", 0))
+
+        self.cart[pid] = row
         self.save()
 
     def remove(self, product_id):
@@ -91,12 +116,9 @@ class Cart:
     def total(self):
         return sum(Decimal(str(i["price"])) * int(i["qty"]) for i in self.cart.values())
 
-
-
     def get_quantity(self, product_id: int) -> int:
         """Cantidad actual de un producto en el carrito."""
         return int(self.cart.get(str(product_id), {}).get("qty", 0))
-
 
     def set(self, product, quantity: int, meta_json=None):
         """
@@ -140,12 +162,10 @@ class Cart:
                 errores.append({"product": p, "qty": qty, "disponible": disp})
         return errores
 
-
     def has_stock_errors(self) -> bool:
         """True si alguna línea del carrito excede el stock."""
         return bool(self.stock_errors())
 
-    
     def normalize_to_stock(self) -> int:
         """
         Recorta automáticamente cantidades al stock disponible.
@@ -157,7 +177,6 @@ class Cart:
         for pid, raw in list(self.cart.items()):
             p = productos.get(int(pid))
             if not p:
-              
                 del self.cart[pid]
                 ajustadas += 1
                 continue

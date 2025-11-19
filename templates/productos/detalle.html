@@ -2,17 +2,45 @@
 {% load static %}
 
 {% block title %}{{ producto.nombre }}{% endblock %}
+{% block page_title %}{{ producto.nombre }}{% endblock %}
+{% block page_subtitle %}
+  {% if producto.categoria %}{{ producto.categoria.nombre }}{% endif %}
+  {% if producto.marca %} · {{ producto.marca.nombre }}{% endif %}
+{% endblock %}
 
 {% block content %}
+ 
 <h1 class="mb-3">{{ producto.nombre }}</h1>
 
 <div class="row g-4">
   <!-- Imagen / preview -->
   <div class="col-md-6">
-    <img id="preview-img"
-         src="{% if producto.imagen %}{{ producto.imagen.url }}{% else %}{% static 'img/placeholder.png' %}{% endif %}"
-         class="img-fluid rounded border w-100"
-         alt="{{ producto.nombre }}">
+    <div id="preview-wrapper"
+         class="border rounded-3 d-flex align-items-center justify-content-center"
+         style="height: 380px; background:#fff;">
+      <img id="preview-img"
+           src="
+           {% if producto.imagen %}
+             {{ producto.imagen.url }}
+           {% else %}
+             {% with nombre=producto.nombre|lower %}
+               {% if 'tirantas' in nombre %}
+                 {% static 'img/tirantas.png' %}
+               {% elif 'sudadera' in nombre %}
+                 {% static 'img/sudadera.png' %}
+               {% elif 'gorra' in nombre %}
+                 {% static 'img/gorrilla.png' %}
+               {% elif 'pantal' in nombre %}
+                 {% static 'img/pantalon-estandar.png' %}
+               {% else %}
+                 {% static 'img/cami.png' %}
+               {% endif %}
+             {% endwith %}
+           {% endif %}
+           "
+           alt="{{ producto.nombre }}"
+           style="height:100%; max-width:100%; object-fit:contain; display:block;">
+    </div>
   </div>
 
   <!-- Info + formulario -->
@@ -23,7 +51,7 @@
     </p>
 
     <p class="fs-4 fw-semibold mb-2">
-      {{ producto.precio }} {{ MONEDA|default:"€" }}
+      <span id="precio-label">{{ producto.precio }}</span> {{ MONEDA|default:"€" }}
     </p>
 
     {% if producto.descripcion %}
@@ -37,6 +65,7 @@
           enctype="multipart/form-data">
       {% csrf_token %}
 
+      {# Variantes (si las hubiera) #}
       {% if tallas or colores %}
       <div class="row g-2">
         {% if tallas %}
@@ -44,7 +73,9 @@
           <label class="form-label">Talla</label>
           <select name="var_talla" class="form-select">
             <option value="">Selecciona talla</option>
-            {% for t in tallas %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+            {% for t in tallas %}
+              <option value="{{ t }}">{{ t }}</option>
+            {% endfor %}
           </select>
         </div>
         {% endif %}
@@ -53,7 +84,9 @@
           <label class="form-label">Color</label>
           <select name="var_color" class="form-select">
             <option value="">Selecciona color</option>
-            {% for c in colores %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+            {% for c in colores %}
+              <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
           </select>
         </div>
         {% endif %}
@@ -61,30 +94,109 @@
       {% endif %}
 
       {% if producto.permite_personalizacion %}
-      <hr class="my-2">
-      <h5 class="mb-2">Personalización</h5>
+        {% with nombre=producto.nombre|lower %}
+          {% if 'pantal' in nombre %}
+            {# ------- PERSONALIZACIÓN PANTALÓN ------- #}
+            <div class="border rounded-3 p-3 bg-light">
+              <h5 class="h6 mb-3">Personalización</h5>
 
-      <div class="mb-2">
-        <label class="form-label">Texto</label>
-        <input type="text" name="texto" class="form-control" maxlength="30" placeholder="Tu texto…">
-      </div>
+              <div class="mb-3">
+                <label class="form-label">Estilo del pantalón</label>
+                <select name="pantalon_estilo"
+                        id="pantalon-estilo"
+                        class="form-select">
+                  <option value="estandar">Normal (sin rotos ni parches)</option>
+                  <option value="roto">
+                    Roto (+{{ producto.precio_personalizacion_color }} {{ MONEDA|default:"€" }})
+                  </option>
+                  <option value="parche">
+                    Con parche (+{{ producto.precio_personalizacion_textura }} {{ MONEDA|default:"€" }})
+                  </option>
+                  <option value="roto-parche">
+                    Roto + parche (+{{ producto.precio_personalizacion_color|add:producto.precio_personalizacion_textura }} {{ MONEDA|default:"€" }})
+                  </option>
+                </select>
+                <div class="form-text">
+                  Elige el acabado del pantalón. La imagen y el precio se actualizarán automáticamente.
+                </div>
+              </div>
+            </div>
+          {% else %}
+            {# ------- PERSONALIZACIÓN GENERAL (camisetas, gorra, sudadera) ------- #}
+            <div class="border rounded-3 p-3 bg-light">
+              <h5 class="h6 mb-3">Personalización</h5>
 
-      <div class="mb-2">
-        <label class="form-label">Color del texto</label>
-        <input type="text" name="color_texto" class="form-control" value="#ffffff" placeholder="#RRGGBB">
-      </div>
+              <div class="mb-3">
+                <label class="form-label">Texto (opcional)</label>
+                <input type="text" name="texto"
+                       class="form-control"
+                       maxlength="30"
+                       placeholder="Ej: Ana, Equipo Alfa…">
+                <div class="form-text">Se aplicará un recargo si añades texto.</div>
+              </div>
 
-      <div class="mb-2">
-        <label class="form-label">Imagen (opcional)</label>
-        <input type="file" name="imagen" class="form-control" accept="image/*">
-      </div>
+              <div class="mb-3">
+                <label class="form-label">Color del texto</label>
 
-      <button class="btn btn-outline-secondary" type="button" id="btn-preview">
-        Generar vista previa
-      </button>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <input type="color"
+                         name="color_texto_picker"
+                         class="form-control form-control-color"
+                         value="#ffffff"
+                         title="Elige el color del texto">
+                  <span class="small text-muted">Color seleccionado</span>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mb-1" id="color-preset-list">
+                  <button type="button" class="btn p-0 border rounded-circle color-pill"
+                          data-color-pill data-color="#ffffff"
+                          title="Blanco"
+                          style="width:24px;height:24px;background:#ffffff;"></button>
+                  <button type="button" class="btn p-0 border rounded-circle color-pill"
+                          data-color-pill data-color="#000000"
+                          title="Negro"
+                          style="width:24px;height:24px;background:#000000;"></button>
+                  <button type="button" class="btn p-0 border rounded-circle color-pill"
+                          data-color-pill data-color="#ff0000"
+                          title="Rojo"
+                          style="width:24px;height:24px;background:#ff0000;"></button>
+                  <button type="button" class="btn p-0 border rounded-circle color-pill"
+                          data-color-pill data-color="#007bff"
+                          title="Azul"
+                          style="width:24px;height:24px;background:#007bff;"></button>
+                  <button type="button" class="btn p-0 border rounded-circle color-pill"
+                          data-color-pill data-color="#28a745"
+                          title="Verde"
+                          style="width:24px;height:24px;background:#28a745;"></button>
+                  <button type="button" class="btn p-0 border rounded-circle color-pill"
+                          data-color-pill data-color="#ffc107"
+                          title="Amarillo"
+                          style="width:24px;height:24px;background:#ffc107;"></button>
+                </div>
+
+                <div class="form-text">
+                  Haz clic en un color o usa el selector
+                </div>
+
+                <input type="hidden" name="color_texto" value="#ffffff">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Imagen / logo (opcional)</label>
+                <input type="file"
+                       name="imagen"
+                       class="form-control"
+                       accept="image/*">
+                <div class="form-text">
+                  Si subes un logo o imagen, se aplicará el recargo de textura.
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        {% endwith %}
       {% endif %}
 
-      <!-- Meta para carrito (variantes / personalización) -->
+      <!-- Meta para carrito -->
       <input type="hidden" name="meta_json" id="meta-json" value="{}">
 
       <!-- Cantidad + CTA -->
@@ -126,42 +238,125 @@
 {% block extra_js %}
 <script>
 (function(){
-  const btn = document.getElementById('btn-preview');
-  if (!btn) return;
+  const MONEDA = "{{ MONEDA|default:'€' }}";
+  const PRECIO_BASE = parseFloat("{{ producto.precio }}");
+  const PERMITE_PERS = {{ producto.permite_personalizacion|yesno:"true,false" }};
+  const PRECIO_NOMBRE = parseFloat("{{ producto.precio_personalizacion_nombre|default:'0' }}");
+  const PRECIO_COLOR = parseFloat("{{ producto.precio_personalizacion_color|default:'0' }}");
+  const PRECIO_TEXTURA = parseFloat("{{ producto.precio_personalizacion_textura|default:'0' }}");
 
-  btn.addEventListener('click', async function(){
-    const form = new FormData();
-    const texto = document.querySelector('[name="texto"]')?.value || '';
-    const color = document.querySelector('[name="color_texto"]')?.value || '#ffffff';
+  const metaInput = document.getElementById('meta-json');
+  const imgTag = document.getElementById('preview-img');
+
+  function updatePrecio() {
+    let total = PRECIO_BASE;
+
     const imagenField = document.querySelector('[name="imagen"]');
-    if (imagenField && imagenField.files.length) {
-      form.append('imagen', imagenField.files[0]);
+    const hasImagen = imagenField ? !!imagenField.files.length : false;
+
+    const pantalonSelect = document.getElementById('pantalon-estilo');
+
+    if (pantalonSelect) {
+      const estilo = pantalonSelect.value;
+      if (estilo === "roto" || estilo === "roto-parche") {
+        total += PRECIO_COLOR;   // recargo roto
+      }
+      if (estilo === "parche" || estilo === "roto-parche") {
+        total += PRECIO_TEXTURA; // recargo parche
+      }
+    } else if (PERMITE_PERS) {
+      const texto = document.querySelector('[name="texto"]')?.value || "";
+      const colorTexto = (document.querySelector('[name="color_texto"]')?.value || "").toLowerCase();
+
+      if (texto) total += PRECIO_NOMBRE;
+
+      const coloresBasicos = ["", "#ffffff", "#fff", "#000000", "#000"];
+      if (!coloresBasicos.includes(colorTexto)) {
+        total += PRECIO_COLOR;
+      }
+
+      if (hasImagen) {
+        total += PRECIO_TEXTURA;
+      }
     }
-    form.append('texto', texto);
-    form.append('color_texto', color);
-    form.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
-    try {
-      const url = "{% url 'productos:producto_preview' producto.slug %}";
-      const res = await fetch(url, { method: 'POST', body: form });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-
-      // Actualiza preview visual
-      const img = document.getElementById('preview-img');
-      if (data.preview_url) img.src = data.preview_url;
-
-      // Actualiza meta para el carrito
-      const meta = { personalizacion: { texto: texto, color_texto: color, preview_url: data.preview_url || null } };
-      const t = document.querySelector('[name="var_talla"]')?.value || null;
-      const c = document.querySelector('[name="var_color"]')?.value || null;
-      if (t) meta.talla = t;
-      if (c) meta.color = c;
-      document.getElementById('meta-json').value = JSON.stringify(meta);
-    } catch (e) {
-      alert('Error generando la vista previa. Inténtalo de nuevo.');
+    const label = document.getElementById('precio-label');
+    if (label && !isNaN(total)) {
+      label.textContent = total.toFixed(2);
     }
+  }
+
+  // --- PANTALÓN: cambiar imagen + meta al cambiar estilo ---
+  const pantalonSelect = document.getElementById('pantalon-estilo');
+  if (pantalonSelect) {
+    const imgBase = "{% static 'img/pantalon-estandar.png' %}";
+    const imgRoto = "{% static 'img/pantalon-roto.png' %}";
+    const imgParche = "{% static 'img/pantalon-parche.png' %}";
+    const imgRotoParche = "{% static 'img/pantalon-roto-parche.png' %}";
+
+    function actualizarPantalon() {
+      const estilo = pantalonSelect.value;
+      let previewUrl = imgBase;
+
+      if (estilo === "roto") previewUrl = imgRoto;
+      else if (estilo === "parche") previewUrl = imgParche;
+      else if (estilo === "roto-parche") previewUrl = imgRotoParche;
+
+      if (imgTag) imgTag.src = previewUrl;
+
+      const meta = {
+        personalizacion: {
+          tipo: "pantalon",
+          estilo: estilo,
+          preview_url: previewUrl
+        }
+      };
+      metaInput.value = JSON.stringify(meta);
+
+      updatePrecio();
+    }
+
+    pantalonSelect.addEventListener('change', actualizarPantalon);
+    actualizarPantalon(); // estado inicial
+  }
+
+  // --- Picker de color + bolitas para camisetas/gorras ---
+  const colorPicker = document.querySelector('[name="color_texto_picker"]');
+  const colorHidden = document.querySelector('[name="color_texto"]');
+  const pills = document.querySelectorAll('[data-color-pill]');
+
+  function setColor(color) {
+    if (colorPicker) colorPicker.value = color;
+    if (colorHidden) colorHidden.value = color;
+    updatePrecio();
+  }
+
+  if (colorPicker && colorHidden) {
+    colorPicker.addEventListener('input', function(){
+      colorHidden.value = this.value;
+      updatePrecio();
+    });
+  }
+
+  pills.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      const c = this.getAttribute('data-color');
+      setColor(c);
+    });
   });
+
+  const textoInput = document.querySelector('[name="texto"]');
+  if (textoInput) {
+    textoInput.addEventListener('input', updatePrecio);
+  }
+
+  const imagenField = document.querySelector('[name="imagen"]');
+  if (imagenField) {
+    imagenField.addEventListener('change', updatePrecio);
+  }
+
+  // Precio inicial
+  updatePrecio();
 })();
 </script>
 {% endblock %}
