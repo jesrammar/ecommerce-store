@@ -91,6 +91,29 @@
       padding:1.25rem 0 1.75rem;
       text-align:center;
     }
+
+    /* ==== Mejora formularios: texto oscuro sobre fondos claros ==== */
+
+    /* Labels siempre legibles */
+    .form-label,
+    .form-check-label {
+      color: #111419;
+    }
+
+    /* Texto de inputs / selects */
+    .form-control,
+    .form-select,
+    textarea.form-control {
+      color: #111419;
+      background-color: #ffffff;
+    }
+
+    /* Placeholders más visibles en blanco */
+    .form-control::placeholder,
+    textarea.form-control::placeholder {
+      color: #6c757d;
+      opacity: 1;
+    }
   </style>
 
   {% block extra_head %}{% endblock %}
@@ -155,7 +178,11 @@
 
         <li class="nav-item ms-lg-3 mt-2 mt-lg-0">
           {% if user.is_authenticated %}
-            <span class="ec-chip me-2">Hola, {{ user.username }}</span>
+            {# El chip Hola, usuario es el enlace al perfil #}
+            <a href="{% url 'accounts:perfil' %}" class="nav-link d-inline px-0">
+              <span class="ec-chip me-2">Hola, {{ user.username }}</span>
+            </a>
+            <span class="text-muted mx-1">·</span>
             <a class="nav-link d-inline" href="{% url 'accounts:logout' %}">Salir</a>
           {% else %}
             <a class="nav-link d-inline" href="{% url 'accounts:login' %}">Entrar</a>
@@ -239,12 +266,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (!input || !btn || !form) return;
 
-  const PATTERN = "{% url 'pedidos:seguimiento' token='__TOKEN__' %}";
+  // Patrón para construir URL con token
+  const PATTERN_TOKEN = "{% url 'pedidos:seguimiento' token='__TOKEN__' %}";
+  // Patrón para construir URL con ID (usamos 0 y luego lo sustituimos)
+  const PATTERN_ID = "{% url 'pedidos:seguimiento_id' pedido_id=0 %}".replace("0", "__ID__");
 
   function extractToken(v) {
     v = (v || "").trim();
     if (!v) return "";
 
+    // Si es URL completa, sacamos el último segmento
     if (v.startsWith("http://") || v.startsWith("https://")) {
       try {
         const u = new URL(v);
@@ -253,22 +284,39 @@ document.addEventListener("DOMContentLoaded", function () {
       } catch(e){}
     }
 
+    // Si viene con /pedidos/seguimiento/ en medio
     const idx = v.toLowerCase().indexOf("/pedidos/seguimiento/");
     if (idx !== -1) {
       let sub = v.slice(idx + "/pedidos/seguimiento/".length);
       return sub.replace(/\/+.*/, "");
     }
 
+    // Si no, asumimos que es el propio token sin adornos
     return v.replace(/^\/+|\/+$/g, "");
   }
 
   function go() {
-    const token = extractToken(input.value);
+    const raw = (input.value || "").trim();
+    if (!raw) {
+      input.classList.add("is-invalid");
+      return;
+    }
+
+    // Si son solo dígitos -> lo tratamos como ID de pedido
+    if (/^\d+$/.test(raw)) {
+      const url = PATTERN_ID.replace("__ID__", raw);
+      window.location.href = url;
+      return;
+    }
+
+    // Si no, extraemos token como antes
+    const token = extractToken(raw);
     if (!token) {
       input.classList.add("is-invalid");
       return;
     }
-    const url = PATTERN.replace("__TOKEN__", encodeURIComponent(token));
+
+    const url = PATTERN_TOKEN.replace("__TOKEN__", encodeURIComponent(token));
     window.location.href = url;
   }
 

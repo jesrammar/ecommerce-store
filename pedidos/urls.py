@@ -14,6 +14,7 @@ urlpatterns = [
 
     # Seguimiento
     path("seguimiento/<str:token>/", views.seguimiento, name="seguimiento"),
+    path("seguimiento-id/<int:pedido_id>/", views.seguimiento_por_id, name="seguimiento_id"),
 
     # Webhook Stripe
     path("webhooks/stripe/", views.stripe_webhook, name="stripe_webhook"),
