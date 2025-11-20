@@ -29,10 +29,16 @@ stripe.api_key = getattr(settings, "STRIPE_SECRET_KEY", "")
 
 def _enviar_email_confirmacion(pedido: Pedido, request=None) -> None:
     """
-    Envía un correo sencillo de confirmación de pedido al cliente.
+    Envía un correo de confirmación de pedido al cliente con:
+    - líneas de pedido
+    - totales
+    - dirección de envío
+    - enlace de seguimiento
     """
+    moneda = getattr(settings, "MONEDA", "€")
     print(f"[DEBUG] Enviando email de confirmación para pedido {pedido.id} a {pedido.email}")
 
+    # ----------------- URL de seguimiento -----------------
     seguimiento_url = ""
     try:
         if request is not None:
@@ -40,6 +46,86 @@ def _enviar_email_confirmacion(pedido: Pedido, request=None) -> None:
                 reverse("pedidos:seguimiento", args=[pedido.tracking_token])
             )
         else:
+            base = getattr(settings, "SITE_URL", "").rstrip("/")
+            if base:
+                seguimiento_url = f"{base}{reverse('pedidos:seguimiento', args=[pedido.tracking_token])}"
+    except Exception as e:
+        print("[DEBUG] Error construyendo URL de seguimiento:", e)
+        seguimiento_url = ""
+
+    # ----------------- Líneas de productos -----------------
+    lineas_items = []
+    for it in pedido.items.all():
+        lineas_items.append(
+            f"   - {it.titulo} x{it.cantidad} = {it.subtotal} {moneda}"
+        )
+    texto_items = "\n".join(lineas_items) or "   (Sin líneas de pedido)"
+
+    # ----------------- Dirección de envío -----------------
+    partes_dir = [
+        pedido.nombre,
+        getattr(pedido, "direccion", "") or "",
+        f"{getattr(pedido, 'cp', '')} {getattr(pedido, 'ciudad', '')}".strip(),
+    ]
+    provincia = getattr(pedido, "provincia", "")
+    if provincia:
+        partes_dir.append(provincia)
+    direccion_texto = "\n".join(p for p in partes_dir if p.strip())
+
+    # ----------------- Cuerpo del correo -----------------
+    subject = f"Confirmación de pedido #{pedido.id}"
+    lineas = [
+        f"Hola {pedido.nombre},",
+        "",
+        "Gracias por tu compra en E-Clothify.",
+        "",
+        f"Detalles del pedido #{pedido.id}:",
+        texto_items,
+        "",
+        f"Envío: {getattr(pedido, 'envio_coste', 0)} {moneda}",
+        f"Total: {pedido.total} {moneda}",
+        "",
+        "Dirección de entrega:",
+        direccion_texto or "(Sin dirección indicada)",
+        "",
+        f"Método de pago: {pedido.pago_metodo}",
+        "",
+    ]
+    if seguimiento_url:
+        lineas.append(f"Puedes seguir el estado de tu pedido aquí: {seguimiento_url}")
+        lineas.append("")
+
+    lineas.append("Un saludo,")
+    lineas.append("El equipo de E-Clothify")
+
+    message = "\n".join(lineas)
+
+    send_mail(
+        subject=subject,
+        message=message,
+        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+        recipient_list=[pedido.email],
+        fail_silently=False,  # si algo va mal con SMTP lo verás en consola
+    )
+
+    print(f"[DEBUG] Email de confirmación enviado para pedido {pedido.id}")
+
+    """
+    Envía un correo sencillo de confirmación de pedido al cliente.
+    """
+    print(f"[DEBUG] Enviando email de confirmación para pedido {pedido.id} a {pedido.email}")
+
+    # Construimos la URL de seguimiento
+    seguimiento_url = ""
+    try:
+        if request is not None:
+            # Construimos URL absoluta usando el request
+            seguimiento_url = request.build_absolute_uri(
+                reverse("pedidos:seguimiento", args=[pedido.tracking_token])
+            )
+        else:
+            # Si venimos de un contexto sin request (por ejemplo, webhook),
+            # usamos SITE_URL como base
             base = getattr(settings, "SITE_URL", "").rstrip("/")
             if base:
                 seguimiento_url = f"{base}{reverse('pedidos:seguimiento', args=[pedido.tracking_token])}"
@@ -67,65 +153,15 @@ def _enviar_email_confirmacion(pedido: Pedido, request=None) -> None:
 
     message = "\n".join(lineas)
 
-    # 👇 Para depurar mejor, quita el fail_silently
     send_mail(
         subject=subject,
         message=message,
         from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
         recipient_list=[pedido.email],
-        fail_silently=False,  # AHORA, si falla, verás el error en consola
+        fail_silently=False,  # si falla, verás el error en consola
     )
 
     print(f"[DEBUG] Email de confirmación enviado para pedido {pedido.id}")
-    """
-    Envía un correo sencillo de confirmación de pedido al cliente.
-    No lanza excepción si falla (fail_silently=True).
-    """
-    try:
-        seguimiento_url = ""
-        try:
-            if request is not None:
-                # construimos url absoluta de seguimiento si tenemos request
-                seguimiento_url = request.build_absolute_uri(
-                    reverse("pedidos:seguimiento", args=[pedido.tracking_token])
-                )
-            else:
-                # si venimos de un contexto sin request (webhook), usamos SITE_URL
-                base = getattr(settings, "SITE_URL", "").rstrip("/")
-                if base:
-                    seguimiento_url = f"{base}{reverse('pedidos:seguimiento', args=[pedido.tracking_token])}"
-        except Exception:
-            seguimiento_url = ""
-
-        subject = f"Confirmación de pedido #{pedido.id}"
-        lineas = [
-            f"Hola {pedido.nombre},",
-            "",
-            "Gracias por tu compra en E-Clothify.",
-            "",
-            f"Número de pedido: {pedido.id}",
-            f"Importe total: {pedido.total} €",
-            f"Método de pago: {pedido.pago_metodo}",
-        ]
-        if seguimiento_url:
-            lineas.append("")
-            lineas.append(f"Puedes seguir el estado de tu pedido aquí: {seguimiento_url}")
-        lineas.append("")
-        lineas.append("Un saludo,")
-        lineas.append("El equipo de E-Clothify")
-
-        message = "\n".join(lineas)
-
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-            recipient_list=[pedido.email],
-            fail_silently=True,  # no rompemos el flujo si falla el email
-        )
-    except Exception:
-        # último seguro
-        pass
 
 
 # ============================================================
@@ -260,13 +296,36 @@ def checkout_tarjeta(request):
 
     return JsonResponse({"client_secret": intent.client_secret, "pedido_id": pedido.id})
 
-
 def checkout_ok(request, pedido_id: int):
     pedido = get_object_or_404(
         Pedido.objects.select_related("envio_metodo"),
         pk=pedido_id,
     )
+
+    if pedido.pago_metodo == "tarjeta":
+        if getattr(pedido, "pago_estado", "") != "pagado":
+            try:
+                confirmar_pedido_tarjeta_exitoso(pedido)
+            except Exception as e:
+                print("[DEBUG] Error confirmando pago tarjeta en checkout_ok:", e)
+
+        try:
+            _enviar_email_confirmacion(pedido, request)
+        except Exception as e:
+            print("[DEBUG] Error enviando email de confirmación en checkout_ok:", e)
+
+    # En cualquier caso, vaciamos el carrito y limpiamos datos de checkout
+    try:
+        cart = Cart(request)
+        cart.clear()
+    except Exception as e:
+        print("[DEBUG] Error limpiando carrito en checkout_ok:", e)
+
+    for key in ("checkout_datos", "checkout_pago", "shipping_method_id"):
+        request.session.pop(key, None)
+
     return render(request, "pedidos/checkout_ok.html", {"pedido": pedido})
+
 
 
 # ============================================================
@@ -283,6 +342,22 @@ def seguimiento(request, token: str):
         "pedidos/seguimiento.html",
         {"pedido": pedido, "desde_token": True},
     )
+    
+def seguimiento_por_id(request, pedido_id: int):
+    """
+    Seguimiento por ID de pedido (requisito de la práctica).
+    Reutiliza la misma plantilla de seguimiento.
+    """
+    pedido = get_object_or_404(
+        Pedido.objects.select_related("envio_metodo").prefetch_related("items"),
+        pk=pedido_id,
+    )
+    return render(
+        request,
+        "pedidos/seguimiento.html",
+        {"pedido": pedido, "desde_id": True},
+    )
+
 
 
 # ============================================================
@@ -309,7 +384,7 @@ def stripe_webhook(request):
         )
         if pedido:
             confirmar_pedido_tarjeta_exitoso(pedido)
-            # email de confirmación también en pago por tarjeta
+            # email de confirmación también en pago por tarjeta (sin request)
             _enviar_email_confirmacion(pedido)
 
     return JsonResponse({"status": "ok"})
