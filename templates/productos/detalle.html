@@ -8,13 +8,137 @@
   {% if producto.marca %} · {{ producto.marca.nombre }}{% endif %}
 {% endblock %}
 
+{% block extra_head %}
+{{ block.super }}
+<style>
+  /* CONTENEDOR DEL MOCKUP */
+  #preview-wrapper {
+    padding: 2.2rem;
+    background: radial-gradient(circle at top, #ffffff 0, #f2f2f2 45%, #e4e4e4 100%);
+    border-radius: 18px;
+    box-shadow:
+      0 18px 45px rgba(0,0,0,0.25),
+      0 0 0 1px rgba(0,0,0,0.04);
+    position: relative;
+    overflow: hidden;
+    transform: perspective(1200px) rotateX(8deg);
+    transform-origin: center bottom;
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+  }
+
+  #preview-wrapper:hover {
+    transform: perspective(1200px) rotateX(0deg);
+    box-shadow:
+      0 26px 70px rgba(0,0,0,0.35),
+      0 0 0 1px rgba(0,0,0,0.06);
+  }
+
+  /* IMAGEN BASE DE LA PRENDA */
+  #preview-wrapper img {
+    max-height: 460px;
+    max-width: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  #preview-img {
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    filter:
+      drop-shadow(0 10px 18px rgba(0,0,0,0.25))
+      drop-shadow(0 4px 8px rgba(0,0,0,0.18));
+  }
+
+  /* cuando cambiamos de estilo (pantalón roto, etc.) */
+  #preview-wrapper.changing #preview-img {
+    opacity: 0;
+    transform: translateY(4px) scale(0.99);
+  }
+
+  #preview-wrapper.ready #preview-img {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  /* TEXTO IMPRESO SOBRE LA PRENDA */
+  .preview-text {
+    position: absolute;
+    top: 48%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px;
+    font-weight: 600;
+    color: #ffffff;
+    text-align: center;
+    max-width: 70%;
+    word-wrap: break-word;
+    line-height: 1.1;
+    opacity: 0;
+    z-index: 2;
+    font-family: 'UnifrakturMaguntia', cursive;
+    cursor: move;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.45));
+    text-shadow:
+      0 0 2px rgba(0,0,0,0.8),
+      0 0 4px rgba(0,0,0,0.6);
+  }
+
+  /* LOGO IMPRESO SOBRE LA PRENDA */
+  .preview-logo {
+    position: absolute;
+    top: 58%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 40%;
+    max-height: 30%;
+    object-fit: contain;
+    opacity: 0;
+    z-index: 1;
+    pointer-events: auto;
+    cursor: move;
+
+    /* colores reales, sin oscurecerse en negro */
+    mix-blend-mode: normal;
+
+    /* relieve y ligera integración */
+    filter:
+      drop-shadow(0 4px 10px rgba(0,0,0,0.45));
+
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  .preview-logo.ready {
+    opacity: 1;
+  }
+
+  .preview-logo.changing {
+    opacity: 0;
+    transform: translate(-50%, -46%);
+  }
+
+  /* un pelín más pequeño en pantallas estrechas */
+  @media (max-width: 768px) {
+    .preview-text {
+      font-size: 26px;
+    }
+    #preview-wrapper {
+      padding: 1.6rem;
+    }
+  }
+</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+        integrity="sha512-BNa5lU3b5vT0N9X9G2G4SrbWW+hfjiQinM3JR2WcKqPzdrYfZL9QfY8pV2OZZhTg1K0GqfC3Qmq3j0CwM8FSQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+{% endblock %}
+
 {% block content %}
 <div class="row g-4">
 
   <!-- Imagen / preview -->
   <div class="col-md-6">
     <div id="preview-wrapper"
-         class="bg-light border-0 rounded-3 shadow-sm d-flex align-items-center justify-content-center p-3">
+         class="bg-light border-0 rounded-3 shadow-sm d-flex align-items-center justify-content-center p-3 position-relative ready">
       <img id="preview-img"
            src="
            {% if producto.imagen %}
@@ -35,8 +159,13 @@
              {% endwith %}
            {% endif %}
            "
-           alt="{{ producto.nombre }}"
-           style="max-height:360px; max-width:100%; object-fit:contain; display:block;">
+           alt="{{ producto.nombre }}">
+
+      
+      <img id="preview-logo" class="preview-logo" alt="Logo preview">
+
+      <!-- Texto sobre la prenda -->
+      <div id="preview-text" class="preview-text"></div>
     </div>
   </div>
 
@@ -105,7 +234,7 @@
         {% with nombre=producto.nombre|lower %}
           {% if 'pantal' in nombre %}
             {# ------- PERSONALIZACIÓN PANTALÓN ------- #}
-            <div class="border rounded-3 p-3 bg-light">
+            <div class="border rounded-3 p-3 bg-light text-dark">
               <h5 class="h6 mb-3 text-dark">Personalización</h5>
 
               <div class="mb-2">
@@ -130,17 +259,29 @@
               </div>
             </div>
           {% else %}
-            {# ------- PERSONALIZACIÓN GENERAL (camisetas, gorra, sudadera) ------- #}
-            <div class="border rounded-3 p-3 bg-light">
+            
+            <div class="border rounded-3 p-3 bg-light text-dark">
               <h5 class="h6 mb-3 text-dark">Personalización</h5>
 
               <div class="mb-3">
                 <label class="form-label">Texto (opcional)</label>
                 <input type="text" name="texto"
                        class="form-control"
-                       maxlength="30"
+                       maxlength="20"
                        placeholder="Ej: Ana, Equipo Alfa…">
                 <div class="form-text">Se aplicará un recargo si añades texto.</div>
+
+                <label class="form-label mt-2 mb-1 small">Estilo de letra</label>
+                <select name="estilo_fuente" id="font-style" class="form-select form-select-sm">
+                  <option value="gothic" selected>Gótica</option>
+                  <option value="sans">Negrita moderna</option>
+                  <option value="script">Caligrafía</option>
+                  <option value="serif">Clásica</option>
+                </select>
+
+                <label class="form-label mt-2 mb-1 small">Tamaño del texto</label>
+                <input type="range" id="text-size" min="70" max="130" value="100"
+                       class="form-range">
               </div>
 
               <div class="mb-3">
@@ -152,7 +293,7 @@
                          class="form-control form-control-color"
                          value="#ffffff"
                          title="Elige el color del texto">
-                  <span class="small text-muted">Color seleccionado</span>
+                  <span class="small text-dark">Color seleccionado</span>
                 </div>
 
                 <div class="d-flex flex-wrap gap-2 mb-1" id="color-preset-list">
@@ -198,6 +339,10 @@
                 <div class="form-text">
                   Si subes un logo o imagen, se aplicará el recargo de textura.
                 </div>
+
+                <label class="form-label mt-2 mb-1 small">Tamaño del logo</label>
+                <input type="range" id="logo-size" min="50" max="150" value="100"
+                       class="form-range">
               </div>
             </div>
           {% endif %}
@@ -247,22 +392,94 @@
 {{ block.super }}
 <script>
   (function(){
-    const MONEDA = "{{ MONEDA|default:'€' }}";
     const PRECIO_BASE = parseFloat("{{ producto.precio }}");
     const PERMITE_PERS = {{ producto.permite_personalizacion|yesno:"true,false" }};
-    const PRECIO_NOMBRE = parseFloat("{{ producto.precio_personalizacion_nombre|default:'0' }}");
-    const PRECIO_COLOR = parseFloat("{{ producto.precio_personalizacion_color|default:'0' }}");
-    const PRECIO_TEXTURA = parseFloat("{{ producto.precio_personalizacion_textura|default:'0' }}");
+    const PRECIO_NOMBRE  = parseFloat("{{ producto.precio_personalizacion_nombre|default:'0' }}".replace(',', '.')) || 0;
+    const PRECIO_COLOR   = parseFloat("{{ producto.precio_personalizacion_color|default:'0' }}".replace(',', '.')) || 0;
+    const PRECIO_TEXTURA = parseFloat("{{ producto.precio_personalizacion_textura|default:'0' }}".replace(',', '.')) || 0;
 
-    const metaInput = document.getElementById('meta-json');
-    const imgTag = document.getElementById('preview-img');
+    const metaInput       = document.getElementById('meta-json');
+    const imgTag          = document.getElementById('preview-img');
+    const previewText     = document.getElementById('preview-text');
+    const previewLogo     = document.getElementById('preview-logo');
+    const textoInput      = document.querySelector('[name="texto"]');
+    const fontSelect      = document.getElementById('font-style');
+    const textSizeSlider  = document.getElementById('text-size');
+    const logoSizeSlider  = document.getElementById('logo-size');
+    const previewWrapper  = document.getElementById('preview-wrapper');
 
+    let baseTextSize = 32;
+    let currentLogoUrl = null;
+    let dragTarget = null;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    const FONT_MAP = {
+      gothic: "'UnifrakturMaguntia', cursive",
+      sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      script: "'Dancing Script', cursive",
+      serif: "'Times New Roman', 'Georgia', serif"
+    };
+
+    /* ===== tamaño texto ===== */
+    function applyTextSize() {
+      if (!previewText) return;
+      let size = baseTextSize;
+      if (textSizeSlider) {
+        const factor = parseInt(textSizeSlider.value || "100", 10) / 100;
+        size = baseTextSize * factor;
+      }
+      previewText.style.fontSize = size + "px";
+    }
+
+    function updatePreviewTexto() {
+      if (!previewText || !textoInput) return;
+      const value = (textoInput.value || "").trim();
+
+      previewText.textContent = value;
+      previewText.style.opacity = value ? "1" : "0";
+
+      let size = 32;
+      const len = value.length;
+      if (len > 8)  size = 28;
+      if (len > 12) size = 24;
+      if (len > 16) size = 20;
+      if (len > 20) size = 18;
+
+      baseTextSize = size;
+      applyTextSize();
+    }
+
+    if (textSizeSlider) {
+      textSizeSlider.addEventListener('input', applyTextSize);
+    }
+
+    /* ===== tamaño logo ===== */
+    function applyLogoSize() {
+      if (!previewLogo || !logoSizeSlider) return;
+      const factor = parseInt(logoSizeSlider.value || "100", 10) / 100;
+      const baseWidth = 40;
+      previewLogo.style.maxWidth = (baseWidth * factor) + "%";
+    }
+
+    if (logoSizeSlider) {
+      logoSizeSlider.addEventListener('input', applyLogoSize);
+    }
+
+    /* ===== fuente ===== */
+    function updateFontFromSelect() {
+      if (!previewText || !fontSelect) return;
+      const key = fontSelect.value || 'gothic';
+      const family = FONT_MAP[key] || FONT_MAP.gothic;
+      previewText.style.fontFamily = family;
+    }
+
+    /* ===== precio ===== */
     function updatePrecio() {
       let total = PRECIO_BASE;
 
       const imagenField = document.querySelector('[name="imagen"]');
       const hasImagen = imagenField ? !!imagenField.files.length : false;
-
       const pantalonSelect = document.getElementById('pantalon-estilo');
 
       if (pantalonSelect) {
@@ -274,7 +491,7 @@
           total += PRECIO_TEXTURA;
         }
       } else if (PERMITE_PERS) {
-        const texto = document.querySelector('[name="texto"]')?.value || "";
+        const texto = (document.querySelector('[name="texto"]')?.value || "").trim();
         const colorTexto = (document.querySelector('[name="color_texto"]')?.value || "").toLowerCase();
 
         if (texto) total += PRECIO_NOMBRE;
@@ -295,14 +512,20 @@
       }
     }
 
+    /* ===== pantalones (cambio de mockup) ===== */
     const pantalonSelect = document.getElementById('pantalon-estilo');
     if (pantalonSelect) {
-      const imgBase = "{% static 'img/pantalon-estandar.png' %}";
-      const imgRoto = "{% static 'img/pantalon-roto.png' %}";
-      const imgParche = "{% static 'img/pantalon-parche.png' %}";
+      const imgBase       = "{% static 'img/pantalon-estandar.png' %}";
+      const imgRoto       = "{% static 'img/pantalon-roto.png' %}";
+      const imgParche     = "{% static 'img/pantalon-parche.png' %}";
       const imgRotoParche = "{% static 'img/pantalon-roto-parche.png' %}";
 
       function actualizarPantalon() {
+        if (previewWrapper) {
+          previewWrapper.classList.remove('ready');
+          previewWrapper.classList.add('changing');
+        }
+
         const estilo = pantalonSelect.value;
         let previewUrl = imgBase;
 
@@ -310,7 +533,15 @@
         else if (estilo === "parche") previewUrl = imgParche;
         else if (estilo === "roto-parche") previewUrl = imgRotoParche;
 
-        if (imgTag) imgTag.src = previewUrl;
+        if (imgTag) {
+          imgTag.onload = function () {
+            if (previewWrapper) {
+              previewWrapper.classList.remove('changing');
+              previewWrapper.classList.add('ready');
+            }
+          };
+          imgTag.src = previewUrl;
+        }
 
         const meta = {
           personalizacion: {
@@ -328,19 +559,23 @@
       actualizarPantalon();
     }
 
+    /* ===== color texto ===== */
     const colorPicker = document.querySelector('[name="color_texto_picker"]');
     const colorHidden = document.querySelector('[name="color_texto"]');
-    const pills = document.querySelectorAll('[data-color-pill]');
+    const pills       = document.querySelectorAll('[data-color-pill]');
 
     function setColor(color) {
       if (colorPicker) colorPicker.value = color;
       if (colorHidden) colorHidden.value = color;
+      if (previewText) previewText.style.color = color;
       updatePrecio();
     }
 
     if (colorPicker && colorHidden) {
       colorPicker.addEventListener('input', function(){
-        colorHidden.value = this.value;
+        const color = this.value;
+        colorHidden.value = color;
+        if (previewText) previewText.style.color = color;
         updatePrecio();
       });
     }
@@ -352,16 +587,111 @@
       });
     });
 
-    const textoInput = document.querySelector('[name="texto"]');
+    /* ===== input texto ===== */
     if (textoInput) {
-      textoInput.addEventListener('input', updatePrecio);
+      textoInput.addEventListener('input', function () {
+        updatePreviewTexto();
+        updatePrecio();
+      });
     }
 
+    /* ===== cambio de fuente ===== */
+    if (fontSelect) {
+      fontSelect.addEventListener('change', function () {
+        updateFontFromSelect();
+      });
+    }
+
+    /* ===== logo (archivo subido) ===== */
     const imagenField = document.querySelector('[name="imagen"]');
     if (imagenField) {
-      imagenField.addEventListener('change', updatePrecio);
+      imagenField.addEventListener('change', function () {
+        updatePrecio();
+
+        if (!previewLogo) return;
+
+        if (currentLogoUrl) {
+          URL.revokeObjectURL(currentLogoUrl);
+          currentLogoUrl = null;
+        }
+
+        const file = this.files && this.files[0];
+
+        if (file) {
+          const url = URL.createObjectURL(file);
+          currentLogoUrl = url;
+
+          previewLogo.classList.remove('ready');
+          previewLogo.classList.add('changing');
+
+          previewLogo.onload = function () {
+            previewLogo.classList.remove('changing');
+            previewLogo.classList.add('ready');
+          };
+
+          previewLogo.src = url;
+          applyLogoSize();
+        } else {
+          previewLogo.src = '';
+          previewLogo.classList.remove('ready', 'changing');
+          previewLogo.style.opacity = '0';
+        }
+      });
     }
 
+    /* ===== drag texto + logo ===== */
+    function onDragStart(e) {
+      const target = e.target;
+      if (target !== previewText && target !== previewLogo) return;
+      if (!previewWrapper) return;
+
+      dragTarget = target;
+      const rect = dragTarget.getBoundingClientRect();
+      dragOffsetX = e.clientX - rect.left;
+      dragOffsetY = e.clientY - rect.top;
+
+      document.addEventListener('mousemove', onDragging);
+      document.addEventListener('mouseup', onDragEnd);
+    }
+
+    function onDragging(e) {
+      if (!dragTarget || !previewWrapper) return;
+
+      const wrapperRect = previewWrapper.getBoundingClientRect();
+      const elemRect = dragTarget.getBoundingClientRect();
+
+      let x = e.clientX - wrapperRect.left - dragOffsetX + elemRect.width / 2;
+      let y = e.clientY - wrapperRect.top - dragOffsetY + elemRect.height / 2;
+
+      const halfW = elemRect.width / 2;
+      const halfH = elemRect.height / 2;
+
+      x = Math.max(halfW, Math.min(wrapperRect.width  - halfW, x));
+      y = Math.max(halfH, Math.min(wrapperRect.height - halfH, y));
+
+      dragTarget.style.left = x + "px";
+      dragTarget.style.top  = y + "px";
+      dragTarget.style.transform = "translate(-50%, -50%)";
+    }
+
+    function onDragEnd() {
+      document.removeEventListener('mousemove', onDragging);
+      document.removeEventListener('mouseup', onDragEnd);
+      dragTarget = null;
+    }
+
+    if (previewWrapper) {
+      previewWrapper.addEventListener('mousedown', onDragStart);
+    }
+
+    /* ===== inicializar ===== */
+    updatePreviewTexto();
+    updateFontFromSelect();
+    if (colorHidden && previewText && colorHidden.value) {
+      previewText.style.color = colorHidden.value;
+    }
+    applyTextSize();
+    applyLogoSize();
     updatePrecio();
   })();
 </script>

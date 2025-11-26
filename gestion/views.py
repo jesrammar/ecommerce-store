@@ -8,7 +8,7 @@ from pedidos.models import Pedido
 from .forms import ProductoForm
 
 
-# ---------- Dashboard ----------
+
 @staff_member_required(login_url="accounts:login")
 def dashboard(request):
     """
@@ -50,7 +50,7 @@ def dashboard(request):
     return render(request, "gestion/dashboard.html", ctx)
 
 
-# ---------- Productos (CRUD) ----------
+
 @staff_member_required(login_url="accounts:login")
 def admin_producto_list(request):
     qs = Producto.objects.order_by("-id")
@@ -98,7 +98,7 @@ def admin_producto_delete(request, pk):
     return render(request, "gestion/producto_confirm_delete.html", {"producto": producto})
 
 
-# ---------- Pedidos ----------
+
 @staff_member_required(login_url="accounts:login")
 def admin_pedido_list(request):
     """
@@ -113,7 +113,7 @@ def admin_pedido_list(request):
         qs = Pedido.objects.all().order_by("-id")
         for p in qs:
             try:
-                # Sacamos los campos pero de forma muy defensiva
+              
                 pid = getattr(p, "id", None)
                 fecha = getattr(
                     p,
@@ -136,7 +136,7 @@ def admin_pedido_list(request):
                     }
                 )
             except Exception as e:
-                # Si un pedido concreto da problemas, lo saltamos
+              
                 messages.warning(
                     request, f"Pedido con problemas al mostrarlo (ID desconocido): {e}"
                 )

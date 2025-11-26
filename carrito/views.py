@@ -62,7 +62,7 @@ def carrito_add(request, product_id: int):
         return redirect("carrito:carrito_ver")
 
     if quantity > max_add:
-        # Ajuste al máximo posible
+       
         nuevo_total = ya + max_add
         if hasattr(cart, "set"):
             cart.set(product, nuevo_total)
@@ -74,11 +74,7 @@ def carrito_add(request, product_id: int):
             )
         messages.warning(request, f"Solo quedaban {max_add} uds de {product.nombre}. Ajustamos tu carrito.")
     else:
-        # =========================
-        #   AÑADIDO NORMAL + PRECIO FINAL
-        # =========================
-
-        # 1) META desde hidden o desde cero
+    
         raw_meta = request.POST.get("meta_json") or "{}"
         try:
             meta = json.loads(raw_meta)

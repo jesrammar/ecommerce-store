@@ -1,208 +1,368 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Carrito{% endblock %}
-{% block page_title %}Carrito{% endblock %}
+
 {% block page_subtitle %}Revisa tus productos antes de finalizar la compra.{% endblock %}
 
-{% block content %}
-  
 
-<h1 class="h3 mb-3">Carrito</h1>
+{% block extra_head %}
+{{ block.super }}
+<style>
+  .cart-shell {
+    max-width: 1100px;
+  }
+
+  .cart-card {
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .cart-card .card-header {
+    background: radial-gradient(circle at top left, #ffd54f, #ffb300);
+    color: #212529;
+  }
+
+  .cart-card .card-header h2 {
+    font-size: 1.4rem;
+    margin: 0;
+  }
+
+  .cart-header-count {
+    font-size: .85rem;
+    opacity: .9;
+  }
+
+  .cart-table tbody tr {
+    transition: background-color 0.18s ease, transform 0.12s ease;
+  }
+
+  .cart-table tbody tr:hover {
+    background-color: rgba(255,255,255,0.02);
+    transform: translateY(-1px);
+  }
+
+  .cart-thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    object-fit: contain;
+    background: #f5f5f5;
+    padding: .25rem;
+  }
+
+  .cart-product-title {
+    font-weight: 600;
+    margin-bottom: .15rem;
+  }
+
+  .cart-meta {
+    font-size: .8rem;
+    color: #6c757d;
+  }
+
+  .cart-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    margin-right: .6rem;
+  }
+
+  .cart-meta-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .cart-price,
+  .cart-subtotal {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .cart-total-row {
+    border-top: 1px solid rgba(255,255,255,0.05);
+    background: rgba(0,0,0,0.15);
+  }
+
+  .cart-total-label {
+    font-weight: 600;
+  }
+
+  .cart-total-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+
+  .btn-cart-remove {
+    border-radius: 999px;
+    padding: .25rem .9rem;
+  }
+
+  @media (max-width: 768px) {
+    .cart-table thead {
+      display: none;
+    }
+    .cart-table tbody tr {
+      display: block;
+      padding: .75rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .cart-table td {
+      display: block;
+      text-align: left !important;
+      padding: .2rem 1rem;
+    }
+    .cart-table td.cart-actions {
+      margin-top: .25rem;
+      display: flex;
+      justify-content: flex-start;
+      gap: .5rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
 
 {% if cart.count %}
 
-  {# Aviso si alguna línea excede el stock #}
-  {% if stock_errores %}
-    <div class="alert alert-danger">
-      <strong>Revisa tu carrito:</strong><br>
-      {% for e in stock_errores %}
-        • Sin stock suficiente para <strong>{{ e.product.nombre }}</strong>.
-        Disponible: <strong>{{ e.disponible }}</strong>. Tenías: {{ e.qty }}.<br>
-      {% endfor %}
-    </div>
-  {% endif %}
+  <div class="cart-shell mx-auto my-4">
+    <div class="card cart-card border-0 shadow-lg">
 
-  <div class="table-responsive">
-    <table class="table align-middle">
-      <thead>
-        <tr>
-          <th>Producto</th>
-          <th style="width:220px;">Cantidad</th>
-          <th class="text-end">Precio</th>
-          <th class="text-end">Subtotal</th>
-          <th></th>
-        </tr>
-      </thead>
+      {# CABECERA TARJETA #}
+      <div class="card-header d-flex justify-content-between align-items-center px-4 py-3">
+        <h2 class="mb-0">Carrito</h2>
+        <span class="cart-header-count">
+          {% if cart.count == 1 %}
+            1 producto en el carrito
+          {% else %}
+            {{ cart.count }} productos en el carrito
+          {% endif %}
+        </span>
+      </div>
 
-      <tbody>
-        {% for item in cart %}
-          {% with meta=item.meta %}
-          <tr>
-            <td>
-              <div class="d-flex align-items-center gap-3">
+      <div class="card-body px-4 py-3">
 
-              {% if meta.personalizacion and meta.personalizacion.preview_url %}
-  <img src="{{ meta.personalizacion.preview_url }}"
-       alt="{{ item.name }}"
-       width="60"
-       class="rounded border">
-{% elif item.product and item.product.imagen %}
-  <img src="{{ item.product.imagen.url }}"
-       alt="{{ item.name }}"
-       width="60"
-       class="rounded border">
-{% else %}
-  {% with nombre=item.product.nombre|default_if_none:""|lower %}
-    {% if 'tirantas' in nombre %}
-      <img src="{% static 'img/tirantas.png' %}"
-           alt="{{ item.name }}"
-           width="60"
-           class="rounded border">
-    {% elif 'sudadera' in nombre %}
-      <img src="{% static 'img/sudadera.png' %}"
-           alt="{{ item.name }}"
-           width="60"
-           class="rounded border">
-    {% elif 'gorra' in nombre %}
-      <img src="{% static 'img/gorrilla.png' %}"
-           alt="{{ item.name }}"
-           width="60"
-           class="rounded border">
-    {% elif 'pantal' in nombre %}
-      <img src="{% static 'img/pantalon-estandar.png' %}"
-           alt="{{ item.name }}"
-           width="60"
-           class="rounded border">
-    {% else %}
-      <img src="{% static 'img/cami.png' %}"
-           alt="{{ item.name }}"
-           width="60"
-           class="rounded border">
-    {% endif %}
-  {% endwith %}
-{% endif %}
+        {# Aviso si alguna línea excede el stock #}
+        {% if stock_errores %}
+          <div class="alert alert-danger mb-3">
+            <strong>Revisa tu carrito:</strong><br>
+            {% for e in stock_errores %}
+              • Sin stock suficiente para <strong>{{ e.product.nombre }}</strong>.
+              Disponible: <strong>{{ e.disponible }}</strong>. Tenías: {{ e.qty }}.<br>
+            {% endfor %}
+          </div>
+        {% endif %}
 
+        <div class="table-responsive">
+          <table class="table cart-table align-middle mb-0">
+            <thead class="text-muted small">
+              <tr>
+                <th>Producto</th>
+                <th style="width:220px;" class="text-center">Cantidad</th>
+                <th class="text-end">Precio</th>
+                <th class="text-end">Subtotal</th>
+                <th class="text-end"></th>
+              </tr>
+            </thead>
 
+            <tbody>
+              {% for item in cart %}
+                {% with meta=item.meta %}
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center gap-3">
 
-                <div>
-                  {% if item.slug %}
-                    <div class="fw-semibold">
-                      <a href="{% url 'productos:producto_detalle' slug=item.slug %}" class="link-body-emphasis">
-                        {{ item.name }}
-                      </a>
-                    </div>
-                  {% else %}
-                    <div class="fw-semibold">{{ item.name }}</div>
-                  {% endif %}
-
-                  {# Variante (talla / color) #}
-                  {% if meta %}
-                    <div class="small text-muted mt-1">
-                      {% if meta.talla %}Talla: {{ meta.talla }}{% endif %}
-                      {% if meta.color %}
-                        {% if meta.talla %} · {% endif %}
-                        Color: {{ meta.color }}
+                      {# MINI THUMB DEL PRODUCTO / PREVIEW #}
+                      {% if meta.personalizacion and meta.personalizacion.preview_url %}
+                        <img src="{{ meta.personalizacion.preview_url }}"
+                             alt="{{ item.name }}"
+                             class="cart-thumb border">
+                      {% elif item.product and item.product.imagen %}
+                        <img src="{{ item.product.imagen.url }}"
+                             alt="{{ item.name }}"
+                             class="cart-thumb border">
+                      {% else %}
+                        {% with nombre=item.product.nombre|default_if_none:""|lower %}
+                          {% if 'tirantas' in nombre %}
+                            <img src="{% static 'img/tirantas.png' %}"
+                                 alt="{{ item.name }}"
+                                 class="cart-thumb border">
+                          {% elif 'sudadera' in nombre %}
+                            <img src="{% static 'img/sudadera.png' %}"
+                                 alt="{{ item.name }}"
+                                 class="cart-thumb border">
+                          {% elif 'gorra' in nombre %}
+                            <img src="{% static 'img/gorrilla.png' %}"
+                                 alt="{{ item.name }}"
+                                 class="cart-thumb border">
+                          {% elif 'pantal' in nombre %}
+                            <img src="{% static 'img/pantalon-estandar.png' %}"
+                                 alt="{{ item.name }}"
+                                 class="cart-thumb border">
+                          {% else %}
+                            <img src="{% static 'img/cami.png' %}"
+                                 alt="{{ item.name }}"
+                                 class="cart-thumb border">
+                          {% endif %}
+                        {% endwith %}
                       {% endif %}
-                    </div>
 
-                    {# Info de personalización (texto / color / mini-preview) #}
-                    {% if meta.personalizacion %}
-                      <div class="small text-muted mt-1">
-                        {% if meta.personalizacion.texto %}
-                          <div>Texto: “{{ meta.personalizacion.texto }}”</div>
-                        {% endif %}
-                        {% if meta.personalizacion.color_texto %}
-                          <div>
-                            Color texto: {{ meta.personalizacion.color_texto }}
-                            <span style="display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid #ccc;margin-left:4px;background:{{ meta.personalizacion.color_texto }}"></span>
+                      <div>
+                        {# Nombre + link a ficha #}
+                        {% if item.slug %}
+                          <div class="cart-product-title">
+                            <a href="{% url 'productos:producto_detalle' slug=item.slug %}"
+                               class="link-body-emphasis">
+                              {{ item.name }}
+                            </a>
                           </div>
+                        {% else %}
+                          <div class="cart-product-title">{{ item.name }}</div>
+                        {% endif %}
+
+                        {# Variante (talla / color) #}
+                        {% if meta %}
+                          <div class="cart-meta mt-1">
+                            {% if meta.talla %}
+                              <span>Talla: {{ meta.talla }}</span>
+                            {% endif %}
+
+                            {% if meta.color %}
+                              <span>
+                                Color: {{ meta.color }}
+                              </span>
+                            {% endif %}
+                          </div>
+
+                          {# Info de personalización #}
+                          {% if meta.personalizacion %}
+                            <div class="cart-meta mt-1">
+                              {% if meta.personalizacion.texto %}
+                                <div>Texto: “{{ meta.personalizacion.texto }}”</div>
+                              {% endif %}
+
+                              {% if meta.personalizacion.color_texto %}
+                                <div>
+                                  Color texto:
+                                  <span class="cart-meta-dot"
+                                        style="background: {{ meta.personalizacion.color_texto }}"></span>
+                                  <code>{{ meta.personalizacion.color_texto }}</code>
+                                </div>
+                              {% endif %}
+                            </div>
+
+                            
+
+                            {% if meta.personalizacion.preview_url %}
+                              <div class="mt-1">
+                                <img src="{{ meta.personalizacion.preview_url }}"
+                                     style="max-width:120px"
+                                     class="border rounded"
+                                     alt="Vista previa">
+                              </div>
+                            {% endif %}
+                          {% endif %}
                         {% endif %}
                       </div>
+                    </div>
+                  </td>
 
-                      {% if not meta.personalizacion.preview_url and item.product and item.product.permite_personalizacion %}
-                        <div class="small text-muted">
-                          (Puedes generar una vista previa en la ficha del producto)
-                        </div>
-                      {% endif %}
+                  {# Cantidad + actualizar #}
+                  <td class="text-center">
+                    <form action="{% url 'carrito:carrito_update' item.product_id %}"
+                          method="post"
+                          class="d-inline-flex gap-2 align-items-center justify-content-center">
+                      {% csrf_token %}
+                      <input type="number" name="qty"
+                             class="form-control form-control-sm"
+                             value="{{ item.qty }}" min="0"
+                             max="{{ item.product.stock|default:0 }}"
+                             style="width:80px;">
+                      <button class="btn btn-sm btn-outline-primary">Actualizar</button>
+                    </form>
 
-                      {% if meta.personalizacion.preview_url %}
-                        <div>
-                          <img src="{{ meta.personalizacion.preview_url }}"
-                               style="max-width:120px"
-                               class="border rounded mt-1"
-                               alt="Vista previa">
-                        </div>
-                      {% endif %}
+                    {% if item.product and item.qty > item.product.stock %}
+                      <div class="small text-danger mt-1">
+                        Solo hay {{ item.product.stock }} uds disponibles.
+                      </div>
                     {% endif %}
-                  {% endif %}
-                </div>
-              </div>
-            </td>
+                  </td>
 
-            <td>
-              <form action="{% url 'carrito:carrito_update' item.product_id %}"
-                    method="post" class="d-flex gap-2 align-items-center">
-                {% csrf_token %}
-                <input type="number" name="qty"
-                       class="form-control form-control-sm"
-                       value="{{ item.qty }}" min="0"
-                       max="{{ item.product.stock|default:0 }}">
-                <button class="btn btn-sm btn-outline-primary">Actualizar</button>
-              </form>
+                  <td class="text-end cart-price">
+                    {{ MONEDA|default:"€" }} {{ item.price|floatformat:2 }}
+                  </td>
 
-              {# Mensaje inline si justo esta línea va pasada de stock #}
-              {% if item.product and item.qty > item.product.stock %}
-                <div class="small text-danger mt-1">
-                  Solo hay {{ item.product.stock }} uds disponibles.
-                </div>
-              {% endif %}
-            </td>
+                  <td class="text-end cart-subtotal">
+                    {{ MONEDA|default:"€" }} {{ item.subtotal|floatformat:2 }}
+                  </td>
 
-            <td class="text-end">
-              {{ MONEDA|default:"€" }} {{ item.price|floatformat:2 }}
-            </td>
-            <td class="text-end">
-              {{ MONEDA|default:"€" }} {{ item.subtotal|floatformat:2 }}
-            </td>
+                  <td class="text-end cart-actions">
+                    <form action="{% url 'carrito:carrito_remove' item.product_id %}"
+                          method="post"
+                          class="d-inline">
+                      {% csrf_token %}
+                      <button class="btn btn-sm btn-outline-danger btn-cart-remove">
+                        Quitar
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                {% endwith %}
+              {% endfor %}
+            </tbody>
 
-            <td class="text-end">
-              {# Mejor práctica: quitar por POST (no GET) #}
-              <form action="{% url 'carrito:carrito_remove' item.product_id %}" method="post" class="d-inline">
-                {% csrf_token %}
-                <button class="btn btn-sm btn-outline-danger">Quitar</button>
-              </form>
-            </td>
-          </tr>
-          {% endwith %}
-        {% endfor %}
-      </tbody>
+            <tfoot>
+              <tr class="cart-total-row">
+                <th colspan="3" class="text-end cart-total-label">Total</th>
+                <th class="text-end cart-total-value">
+                  {{ MONEDA|default:"€" }} {{ cart.total|floatformat:2 }}
+                </th>
+                <th></th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
 
-      <tfoot>
-        <tr>
-          <th colspan="3" class="text-end">Total</th>
-          <th class="text-end">
-            {{ MONEDA|default:"€" }} {{ cart.total|floatformat:2 }}
-          </th>
-          <th></th>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
+      {# FOOTER CON BOTONES #}
+      <div class="card-footer px-4 py-3 cart-total-row">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+          <div class="small text-muted">
+            Revisa los datos de personalización antes de finalizar la compra.
+          </div>
+          <div class="d-flex gap-2 justify-content-end">
+            <a href="{% url 'productos:catalogo' %}" class="btn btn-outline-light">
+              Seguir comprando
+            </a>
 
-  <div class="d-flex gap-2 justify-content-end">
-    <a href="{% url 'productos:catalogo' %}" class="btn btn-outline-secondary">Seguir comprando</a>
+            <a href="{% url 'pedidos:checkout_datos' %}"
+               class="btn btn-success px-4 {% if stock_errores %}disabled{% endif %}"
+               {% if stock_errores %}aria-disabled="true"{% endif %}>
+              Finalizar compra
+            </a>
+          </div>
+        </div>
+      </div>
 
-    {# Si hay errores de stock, desactivamos el botón #}
-    <a href="{% url 'pedidos:checkout_datos' %}"
-       class="btn btn-success {% if stock_errores %}disabled{% endif %}"
-       {% if stock_errores %}aria-disabled="true"{% endif %}>
-      Finalizar compra
-    </a>
+    </div>
   </div>
 
 {% else %}
-  <div class="alert alert-info">Tu carrito está vacío.</div>
-  <a href="{% url 'productos:catalogo' %}" class="btn btn-primary">Ver catálogo</a>
+  <div class="cart-shell mx-auto my-4">
+    <div class="card cart-card border-0 shadow-lg">
+      <div class="card-header px-4 py-3">
+        <h2 class="mb-0">Carrito</h2>
+      </div>
+      <div class="card-body px-4 py-4">
+        <div class="alert alert-info mb-3">Tu carrito está vacío.</div>
+        <a href="{% url 'productos:catalogo' %}" class="btn btn-primary">
+          Ver catálogo
+        </a>
+      </div>
+    </div>
+  </div>
 {% endif %}
+
 {% endblock %}
