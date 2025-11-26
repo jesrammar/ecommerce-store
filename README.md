@@ -1,90 +1,113 @@
-# 🛒 Ecommerce Store (Django)
+# 🧥 E-CLOTHIFY — Ecommerce Store (Django)
 
-Proyecto académico de **Planificación y Gestión de Proyectos Informáticos**.  
-Solución **B2C** con **Django** que permite una experiencia de compra completa: catálogo, carrito, checkout, envío, pagos (contrareembolso y tarjeta con Stripe), y seguimiento de pedidos.
+![Django](https://img.shields.io/badge/Django-4.2-0C4B33?logo=django&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![Stripe](https://img.shields.io/badge/Stripe-Test%20Mode-635BFF?logo=stripe&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Academic%20Project-0ea5e9)
+
+
+Tienda online completa con catálogo, carrito, checkout, pagos (Stripe), envío, seguimiento y panel de gestión.
+
+---
+![demo](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaG9yczcxZ2h6b3A3dDRsMWZ6bTJwbjE2eW51bnFkdHQzcGNwaGQ5MSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/o0vwzuFwCGAFO/giphy.gif)
 
 ---
 
-## 📑 Índice
-- [Descripción del proyecto](#descripción-del-proyecto)
-- [Requisitos del producto](#requisitos-del-producto)
-- [Requisitos del proyecto](#requisitos-del-proyecto)
-- [Modelo de datos](#modelo-de-datos)
-- [Mapa de navegación](#mapa-de-navegación)
-- [Tecnologías utilizadas](#tecnologías-utilizadas)
-- [Instalación y ejecución](#instalación-y-ejecución)
-- [Variables de entorno](#variables-de-entorno)
-- [Pagos](#pagos)
-- [Estructura del proyecto](#estructura-del-proyecto)
-- [Notas de despliegue](#notas-de-despliegue)
-- [Equipo de trabajo](#equipo-de-trabajo)
-- [Licencia](#licencia)
+# 📑 Índice
+1. [Descripción general](#-descripción-general)
+2. [Requisitos del producto](#-requisitos-del-producto)
+3. [Requisitos del proyecto](#-requisitos-del-proyecto)
+4. [Modelo de datos](#-modelo-de-datos)
+5. [Mapa de navegación](#-mapa-de-navegación)
+6. [Tecnologías utilizadas](#-tecnologías-utilizadas)
+7. [Instalación y ejecución](#️-instalación-y-ejecución)
+8. [Variables de entorno](#-variables-de-entorno)
+9. [Pagos con Stripe](#-pagos-con-stripe)
+10. [Estructura del proyecto](#-estructura-del-proyecto)
+11. [Notas de despliegue (Render)](#-notas-de-despliegue-render)
+12. [Equipo de trabajo](#-equipo-de-trabajo)
+13. [Licencia](#-licencia)
 
 ---
 
-## 📌 Descripción del proyecto
-La empresa cliente (distribución de bienes) busca dar el salto al e-commerce. Se entrega una tienda **B2C** funcional desplegable en **PaaS**, con backoffice mínimo para gestión de pedidos.
+# 📌 Descripción general
+
+E-CLOTHIFY es un ecommerce B2C construido con **Django**, ofreciendo:
+
+- Catálogo navegable con filtros  
+- Carrito persistente por sesión  
+- Checkout en ≤ 3 pasos  
+- Envío + pago (contrareembolso o tarjeta, Stripe)  
+- Confirmación por email  
+- Seguimiento por token o por ID  
+- Panel de gestión **independiente del admin de Django**
+
+Optimizado para despliegue en **Render**.
 
 ---
 
-## ✅ Requisitos del producto
-- Cesta de compra visible con control de cantidades (+/−).
-- Catálogo por **categorías** (y **marca**).
-- Checkout ≤ **3 pasos** (datos → pago → confirmación), admite invitado.
-- Login por **email + contraseña**.
-- **Español**, sensación de compra segura.
-- **Seguimiento** por token (y por **ID + email**).
-- Productos **agotados** marcados y no añadibles.
-- Una **imagen principal** por producto.
-- **Búsqueda** por nombre, categoría y marca (desde inicio).
-- Email de **confirmación de pedido**.
-- No se contemplan devoluciones.
-- **Marca corporativa** reflejada.
-- Administración fuera del admin de Django (mínimo: pedidos).
+# ✅ Requisitos del producto
+
+### 🛒 Catálogo
+- Categorías, marcas y búsqueda por texto.
+- Control de stock (agotado).
+- Imagen principal de producto.
+
+### 🌐 Carrito
+- Cantidades (+/−).
+- Totales dinámicos.
+- Persistencia en sesión.
+
+### 💳 Checkout
+- 3 pasos: datos → pago → confirmación.
+- Permite invitado.
+- Validación de stock y envío.
+
+### 📦 Pedidos y seguimiento
+- Email de confirmación.
+- Seguimiento:
+  - Token único
+  - ID + email
+
+### 🔐 Autenticación
+- Email + contraseña.
+- Perfil editable.
+
+### ⚙️ Panel de gestión
+- Métricas (productos, pedidos, pendientes).
+- Cambios rápidos de estado.
+- Vista detallada.
+- Interfaz visual moderna.
 
 ---
 
-## 📋 Requisitos del proyecto
-**Cliente**
-- Versiones de pruebas en **PaaS**.
-- Entrega de **código** + **instrucciones**.
+# 📋 Requisitos del proyecto
 
-**Organización**
-- Ciclo de vida **híbrido**.
-- Plantillas oficiales.
-- Tecnologías: **Django** + **VS Code**.
-- **Django admin** solo en desarrollo.
+### Cliente
+- Pruebas en PaaS (Render).
+- Entrega con documentación.
 
----
-
-## 🗄️ Modelo de datos
-Entidades implementadas:
-- `Producto`, `Categoria`, `Marca`
-- `Pedido`, `PedidoItem`, `ShippingMethod`
-- `User` (Django) para clientes
-- Carrito en **sesión** (no DB)
-
-> Diagramas incluidos en `/docs` (si aplican).
+### Organización
+- Metodología híbrida.
+- Requisitos: Django, VS Code, Stripe.
+- Admin de Django solo en desarrollo.
 
 ---
 
-## 🧭 Mapa de navegación
-Inicio → Catálogo → Ficha → Carrito → **Seleccionar envío** → Checkout (Datos) → Pago (Contrareembolso / Tarjeta) → **Confirmación** → **Seguimiento**.
+# 🗄️ Modelo de datos
+
+Entidades principales:
+
+- `Producto`
+- `Categoria`
+- `Marca`
+- `Pedido`
+- `PedidoItem`
+- `ShippingMethod`
+- `User` (Django)
+- Carrito → almacenado en **sesión**
 
 ---
 
-## 🛠️ Tecnologías utilizadas
-- **Python 3.12**, **Django 4.2**
-- **Bootstrap 5**
-- **Stripe** (pagos tarjeta)
-- **SQLite** (dev) / **PostgreSQL** (prod opcional)
-- PaaS: Render / Koyeb / PythonAnywhere
+# 🧭 Mapa de navegación
 
----
-
-## ⚙️ Instalación y ejecución
-
-### 1) Clonar
-```bash
-git clone https://github.com/jesrammar/ecommerce-store.git
-cd ecommerce-store
