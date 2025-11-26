@@ -11,10 +11,10 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-key")
 # 👇 AHORA DEBUG SE LEE DEL .env
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 
-ALLOWED_HOSTS = os.environ.get(
-    "DJANGO_ALLOWED_HOSTS",
-    "127.0.0.1,localhost"
-).split(",")
+raw_hosts = os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
+ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
+print("### ALLOWED_HOSTS:", ALLOWED_HOSTS)
+
 
 SITE_URL = os.environ.get("SITE_URL", "http://127.0.0.1:8000")
 
@@ -119,6 +119,7 @@ STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 
 CSRF_TRUSTED_ORIGINS = [
+    "https://ecommerce-store-65kd.onrender.com",
     "http://127.0.0.1:8000",
     "http://localhost:8000",
 ]
