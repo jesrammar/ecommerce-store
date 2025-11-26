@@ -81,8 +81,13 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]   # dev
-# STATIC_ROOT = BASE_DIR / "staticfiles"   # prod
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static"   # tus archivos estáticos en desarrollo
+]
+
+STATIC_ROOT = BASE_DIR / "staticfiles"     # carpeta donde collectstatic guardará todo en producción
+
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
